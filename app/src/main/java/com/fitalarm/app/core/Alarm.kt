@@ -80,6 +80,13 @@ data class Alarm(
     val missionEnabled: Boolean = false,
     val routine: List<RoutineStep> = emptyList(),
 
+    // 쉬는 날 (반복 알람에만 적용)
+    val skipHolidays: Boolean = true,      // 공휴일·대체·임시공휴일·선거일
+    val skipDaysOff: Boolean = true,       // 내가 등록한 휴무일
+
+    // 오늘의 운동 음성 안내
+    val announce: Boolean = true,
+
     // ---- 런타임 상태 (저장되지만 사용자가 직접 설정하지 않음) ----
     val snoozeCount: Int = 0,
     val snoozedUntil: Long = 0L,           // epoch ms, 0 = 다시 알림 대기 아님
@@ -113,5 +120,15 @@ data class Alarm(
 
         fun describeRingMinutes(minutes: Int): String =
             if (minutes == RING_UNTIL_DISMISSED) "끌 때까지" else "${minutes}분"
+    }
+}
+
+/** 음성 안내 목소리 톤 (폰 내장 TTS 의 여성/남성 음성 + 높낮이·속도 조절) */
+enum class VoiceStyle(val key: String, val title: String, val pitch: Float, val rate: Float, val wantMale: Boolean) {
+    WARM_FEMALE("warm_female", "밝고 다정한 여성 목소리", 1.08f, 0.95f, false),
+    CALM_MALE("calm_male", "낮고 차분한 남성 목소리", 0.85f, 0.92f, true);
+
+    companion object {
+        fun fromKey(key: String?): VoiceStyle = entries.firstOrNull { it.key == key } ?: WARM_FEMALE
     }
 }

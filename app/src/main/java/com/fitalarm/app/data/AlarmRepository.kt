@@ -66,7 +66,16 @@ object AlarmRepository {
         }
     }
 
-    private fun toJson(a: Alarm): JSONObject = JSONObject().apply {
+    /** 전체 교체 (백업 복원용) */
+    fun replaceAll(ctx: Context, alarms: List<Alarm>) = synchronized(lock) {
+        val nextId = (alarms.maxOfOrNull { it.id } ?: 0) + 1
+        prefs(ctx).edit()
+            .putString(KEY_ALARMS, JSONArray().apply { alarms.forEach { put(toJson(it)) } }.toString())
+            .putInt(KEY_NEXT_ID, nextId)
+            .commit()
+    }
+
+    internal fun toJson(a: Alarm): JSONObject = JSONObject().apply {
         put("id", a.id)
         put("hour", a.hour)
         put("minute", a.minute)
@@ -88,11 +97,14 @@ object AlarmRepository {
         put("routine", JSONArray().apply {
             a.routine.forEach { put(JSONObject().put("type", it.type.key).put("reps", it.reps)) }
         })
+        put("skipHolidays", a.skipHolidays)
+        put("skipDaysOff", a.skipDaysOff)
+        put("announce", a.announce)
         put("snoozeCount", a.snoozeCount)
         put("snoozedUntil", a.snoozedUntil)
     }
 
-    private fun fromJson(o: JSONObject): Alarm? {
+    internal fun fromJson(o: JSONObject): Alarm? {
         val id = o.optInt("id", 0)
         if (id <= 0) return null
         val d = Alarm()
@@ -123,6 +135,9 @@ object AlarmRepository {
             ringMinutes = o.optInt("ringMinutes", d.ringMinutes).coerceAtLeast(0),
             missionEnabled = o.optBoolean("missionEnabled", d.missionEnabled),
             routine = routine,
+            skipHolidays = o.optBoolean("skipHolidays", d.skipHolidays),
+            skipDaysOff = o.optBoolean("skipDaysOff", d.skipDaysOff),
+            announce = o.optBoolean("announce", d.announce),
             snoozeCount = o.optInt("snoozeCount", 0).coerceAtLeast(0),
             snoozedUntil = o.optLong("snoozedUntil", 0L).coerceAtLeast(0L),
         )

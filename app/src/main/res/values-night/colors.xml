@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FF0E1A16</color>
+    <color name="ring_bg">#FF140F1F</color>
+    <color name="accent">#FF4ADE80</color>
+    <color name="on_accent">#FF052E16</color>
+    <color name="dialog_bg">#FF16241F</color>
+    <color name="text_primary">#FFE7F2EC</color>
+    <color name="text_secondary">#FFA7BDB2</color>
+    <color name="widget_bg_start">#FF163A27</color>
+    <color name="widget_bg_end">#FF0C2E3F</color>
+    <color name="widget_label">#FF86EFAC</color>
+    <color name="widget_text">#FFE7F2EC</color>
+    <color name="widget_detail">#FFA7BDB2</color>
+</resources>

@@ -20,6 +20,14 @@ import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.fitalarm.app.core.Alarm
+import com.fitalarm.app.core.KoreanSpeech
+import com.fitalarm.app.core.RecordEntry
+import com.fitalarm.app.core.RecordKind
+import com.fitalarm.app.data.RecordRepository
+import com.fitalarm.app.data.SettingsRepository
+import com.fitalarm.app.voice.Speaker
+import java.time.LocalDate
+import java.time.LocalDateTime
 import com.fitalarm.app.data.AlarmRepository
 import com.fitalarm.app.defaultVibrator
 import com.fitalarm.app.systemService
@@ -49,6 +57,11 @@ class AlarmService : Service() {
     private var missionActive = false
     private var lastMissionProgress = 0L
     private var isForeground = false
+
+    // 음성 안내
+    private var speaker: Speaker? = null
+    private var ducked = false
+    private var currentIsSnooze = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -112,10 +125,12 @@ class AlarmService : Service() {
 
         acquireWakeLock()
         missionActive = false
+        currentIsSnooze = isSnoozeFire
         startSound(updated)
         startVibration()
         armRingTimeout(updated)
         RingState.set(updated.id)
+        startAnnouncements(updated)
     }
 
     // ------------------------------------------------------------------ 다시 알림 / 끄기
@@ -162,6 +177,8 @@ class AlarmService : Service() {
             return
         }
         if (a.hasMission && !missionDone) return   // 미션 알람은 미션 완료로만 끌 수 있음
+        // 미션 알람의 기록은 미션 화면이 운동 횟수와 함께 남김
+        if (!a.hasMission) record(a, RecordKind.DISMISS)
         finishRinging(a, stopService = true)
     }
 
@@ -205,6 +222,7 @@ class AlarmService : Service() {
             snooze(a)
         } else {
             Notifications.showMissed(this, a)
+            record(a, RecordKind.MISSED)
             finishRinging(a, stopService = true)
         }
     }
@@ -216,6 +234,7 @@ class AlarmService : Service() {
     private fun setMissionActive(active: Boolean) {
         if (current == null) return
         missionActive = active
+        if (active) stopAnnouncements()
         lastMissionProgress = SystemClock.elapsedRealtime()
         applyLevels()
         handler.removeCallbacks(missionIdleCheck)
@@ -293,7 +312,7 @@ class AlarmService : Service() {
             val progress = ((SystemClock.elapsedRealtime() - crescendoStart).toFloat() / CRESCENDO_MS).coerceIn(0f, 1f)
             CRESCENDO_START + (1f - CRESCENDO_START) * progress
         } else 1f
-        val level = ramp * (if (isMissionQuiet()) MISSION_VOLUME else 1f)
+        val level = ramp * (if (isMissionQuiet()) MISSION_VOLUME else 1f) * (if (ducked) DUCK_VOLUME else 1f)
         try {
             p.setVolume(level, level)
         } catch (e: IllegalStateException) {
@@ -374,6 +393,56 @@ class AlarmService : Service() {
         vibrating = false
     }
 
+    // ------------------------------------------------------------------ 오늘의 운동 음성 안내
+
+    private val announceRunnable = Runnable { announce() }
+
+    private fun startAnnouncements(a: Alarm) {
+        val settings = SettingsRepository.get(this)
+        if (!settings.voiceAnnounce || !a.announce) return
+        speaker?.shutdown()
+        speaker = Speaker(this, AudioAttributes.USAGE_ALARM, settings.voiceStyle) { ok ->
+            if (ok && current?.id == a.id) handler.postDelayed(announceRunnable, FIRST_ANNOUNCE_DELAY_MS)
+        }
+    }
+
+    /** 알람 소리를 줄이고 안내를 읽은 뒤 원래 크기로. 설정에 따라 1분 뒤 반복 */
+    private fun announce() {
+        val a = current ?: return
+        val sp = speaker ?: return
+        if (missionActive) return
+        val text = KoreanSpeech.announcement(LocalDateTime.now(), a.label, a.routine, a.hasMission, currentIsSnooze)
+        ducked = true
+        updatePlayerVolume()
+        RingState.setAnnouncing(text)
+        sp.speak(text) {
+            ducked = false
+            updatePlayerVolume()
+            RingState.setAnnouncing(null)
+            val stillRinging = current?.id == a.id && !missionActive
+            if (stillRinging && SettingsRepository.get(this).announceRepeat) {
+                handler.postDelayed(announceRunnable, REPEAT_ANNOUNCE_MS)
+            }
+        }
+    }
+
+    private fun stopAnnouncements() {
+        handler.removeCallbacks(announceRunnable)
+        speaker?.stop()
+        if (ducked) {
+            ducked = false
+            updatePlayerVolume()
+        }
+        if (RingState.announcing != null) RingState.setAnnouncing(null)
+    }
+
+    private fun record(a: Alarm, kind: RecordKind) {
+        RecordRepository.append(
+            this,
+            RecordEntry(LocalDate.now(), kind, alarmId = a.id, atMillis = System.currentTimeMillis()),
+        )
+    }
+
     // ------------------------------------------------------------------ 수명 관리
 
     private fun enterForeground(notification: android.app.Notification) {
@@ -395,6 +464,9 @@ class AlarmService : Service() {
     private fun stopRinging() {
         handler.removeCallbacks(ringTimeout)
         handler.removeCallbacks(missionIdleCheck)
+        stopAnnouncements()
+        speaker?.shutdown()
+        speaker = null
         stopSound()
         stopVibration()
         missionActive = false
@@ -431,6 +503,9 @@ class AlarmService : Service() {
         private const val MISSION_VOLUME = 0.25f
         private const val MISSION_IDLE_MS = 45_000L
         private const val WAKE_LOCK_MAX_MS = 60 * 60_000L
+        private const val DUCK_VOLUME = 0.2f
+        private const val FIRST_ANNOUNCE_DELAY_MS = 2_500L
+        private const val REPEAT_ANNOUNCE_MS = 60_000L
 
         private val ALARM_ATTRIBUTES: AudioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ALARM)

@@ -37,6 +37,9 @@ import com.fitalarm.app.core.RoutineStep
 import com.fitalarm.app.core.VibrationPattern
 import com.fitalarm.app.core.describe
 import com.fitalarm.app.data.AlarmRepository
+import com.fitalarm.app.data.HolidayRepository
+import com.fitalarm.app.data.SettingsRepository
+import com.fitalarm.app.holiday.HolidaySync
 import com.fitalarm.app.defaultVibrator
 import java.time.ZonedDateTime
 import java.util.Locale
@@ -83,6 +86,7 @@ class AlarmEditActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Palette.apply(this)
         setupEdgeToEdge()
         val id = intent.getIntExtra(EXTRA_ALARM_ID, 0)
         val existing = if (id > 0) AlarmRepository.get(this, id) else null
@@ -121,6 +125,7 @@ class AlarmEditActivity : Activity() {
         val content = vbox { setPadding(dp(16), dp(8), dp(16), dp(24)) }
         content.addView(buildTimeCard(), cardLp())
         content.addView(buildRepeatCard(), cardLp())
+        content.addView(buildDayOffCard(), cardLp())
         content.addView(buildSoundCard(), cardLp())
         content.addView(buildVibrationCard(), cardLp())
         content.addView(buildSnoozeCard(), cardLp())
@@ -142,55 +147,6 @@ class AlarmEditActivity : Activity() {
     }
 
     private fun cardLp() = lp().margins(b = dp(12))
-
-    private fun card(title: String?, block: LinearLayout.() -> Unit): LinearLayout = vbox {
-        setPadding(dp(18), dp(16), dp(18), dp(12))
-        background = rounded(Palette.SURFACE, dpf(22))
-        if (title != null) addView(label(title, 13f, Palette.TEXT_DIM, Fonts.MEDIUM), lp().margins(b = dp(6)))
-        block()
-    }
-
-    private fun divider(): View = View(this).apply {
-        setBackgroundColor(Palette.OUTLINE)
-        layoutParams = lp(MATCH, dp(1)).margins(t = dp(4), b = dp(4))
-    }
-
-    /** 제목(+설명) 왼쪽, 값 오른쪽, 탭하면 onClick */
-    private fun valueRow(title: String, subtitle: String? = null, onClick: () -> Unit): Pair<View, TextView> {
-        val value = label("", 15f, Palette.ACCENT, Fonts.MEDIUM)
-        val row = hbox {
-            setPadding(dp(4), dp(12), dp(4), dp(12))
-            background = rippleOnly(12)
-            isClickable = true
-            setOnClickListener { onClick() }
-            addView(vbox {
-                addView(label(title, 16f))
-                if (subtitle != null) addView(label(subtitle, 12.5f, Palette.TEXT_DIM), lp().margins(t = dp(4)))
-            }, lp(0, WRAP, 1f))
-            addView(value, lp(WRAP, WRAP).margins(l = dp(12)))
-        }
-        return row to value
-    }
-
-    private fun switchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit): View {
-        val sw = Switch(this).apply {
-            isChecked = checked
-            setOnCheckedChangeListener { _, c -> onChange(c) }
-        }
-        return hbox {
-            setPadding(dp(4), dp(10), 0, dp(10))
-            background = rippleOnly(12)
-            isClickable = true
-            setOnClickListener { sw.toggle() }
-            addView(vbox {
-                addView(label(title, 16f))
-                if (subtitle != null) {
-                    addView(label(subtitle, 12.5f, Palette.TEXT_DIM).apply { setLineSpacing(0f, 1.2f) }, lp().margins(t = dp(4)))
-                }
-            }, lp(0, WRAP, 1f))
-            addView(sw, lp(WRAP, WRAP).margins(l = dp(12)))
-        }
-    }
 
     // ------------------------------------------------------------------ 시간
 
@@ -260,7 +216,8 @@ class AlarmEditActivity : Activity() {
 
     private fun updateRemaining() {
         val now = ZonedDateTime.now()
-        val next = AlarmMath.nextOccurrence(draft.hour, draft.minute, draft.days, now)
+        val skip = AlarmMath.effectiveSkip(draft, HolidayRepository.skipRuleFor(this, draft))
+        val next = AlarmMath.nextOccurrence(draft.hour, draft.minute, draft.days, now, skip)
         remainingText.text = AlarmMath.describeRemaining(
             now.toInstant().toEpochMilli(), next.toInstant().toEpochMilli()
         ) + " 후에 울립니다"
@@ -315,12 +272,69 @@ class AlarmEditActivity : Activity() {
     }
 
     private fun renderDays() {
+        if (::holidaySub.isInitialized) renderDayOff()
         dayViews.forEachIndexed { i, v ->
             val on = Days.isSet(draft.days, i)
             v.background = if (on) oval(Palette.ACCENT) else oval(Palette.SURFACE_HI)
             v.setTextColor(if (on) Palette.ON_ACCENT else Palette.TEXT_DIM)
         }
         updateRemaining()
+    }
+
+    // ------------------------------------------------------------------ 쉬는 날 · 음성 안내
+
+    private lateinit var holidaySub: TextView
+    private lateinit var daysOffSub: TextView
+    private lateinit var announceSub: TextView
+
+    private fun buildDayOffCard(): View = card("쉬는 날 · 음성 안내") {
+        val (hRow, _, hSub) = switchRowWithRefs("공휴일에는 울리지 않기", "", draft.skipHolidays) { on ->
+            draft = draft.copy(skipHolidays = on)
+            if (on) maybeAskCalendar()
+            renderDayOff()
+        }
+        holidaySub = hSub!!
+        addView(hRow)
+        val (dRow, _, dSub) = switchRowWithRefs("내 휴무일도 건너뛰기", "", draft.skipDaysOff) { on ->
+            draft = draft.copy(skipDaysOff = on)
+            renderDayOff()
+        }
+        daysOffSub = dSub!!
+        addView(dRow)
+        val (aRow, _, aSub) = switchRowWithRefs("오늘의 운동 음성 안내", "", draft.announce) { on ->
+            draft = draft.copy(announce = on)
+            renderDayOff()
+        }
+        announceSub = aSub!!
+        addView(aRow)
+    }
+
+    private fun renderDayOff() {
+        val repeating = draft.isRepeating
+        val next = if (repeating) {
+            AlarmMath.nextSkippedDay(draft.copy(enabled = true), ZonedDateTime.now(), HolidayRepository.skipRuleFor(this, draft), 120)
+        } else null
+        holidaySub.text = when {
+            !repeating -> "반복 알람에만 적용돼요"
+            next != null && draft.skipHolidays && HolidayRepository.holidayName(this, next.first) != null ->
+                "대체·임시공휴일, 선거일 포함 · 다음 건너뜀 ${AlarmMath.shortDate(next.first)} ${next.second}"
+            else -> "대체·임시공휴일, 선거일 포함"
+        }
+        val count = HolidayRepository.snapshot(this).daysOff.keys.count { !it.isBefore(java.time.LocalDate.now()) }
+        daysOffSub.text = if (!repeating) "반복 알람에만 적용돼요"
+        else "등록된 휴무일 ${count}일 · 설정 > 쉬는 날에서 관리"
+        announceSub.text = if (!SettingsRepository.get(this).voiceAnnounce) "설정에서 음성 안내가 꺼져 있어요"
+        else "알람 소리를 줄이고 날짜와 오늘의 운동을 읽어줘요"
+        updateRemaining()
+    }
+
+    /** 공휴일 건너뛰기를 처음 켤 때 한 번만 폰 달력 권한 요청 (거절해도 내장 규칙·구글 달력으로 동작) */
+    private fun maybeAskCalendar() {
+        if (!SettingsRepository.get(this).useDeviceCalendar || HolidaySync.hasCalendarPermission(this)) return
+        val prefs = getSharedPreferences(MainActivity.UI_PREFS, MODE_PRIVATE)
+        if (prefs.getBoolean(MainActivity.KEY_CALENDAR_ASKED, false)) return
+        prefs.edit().putBoolean(MainActivity.KEY_CALENDAR_ASKED, true).apply()
+        requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), REQ_CALENDAR)
     }
 
     // ------------------------------------------------------------------ 소리
@@ -731,6 +745,9 @@ class AlarmEditActivity : Activity() {
         if (requestCode == REQ_CAMERA && grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
             toast("카메라 권한이 없으면 운동 미션을 사용할 수 없어요")
         }
+        if (requestCode == REQ_CALENDAR && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            HolidaySync.syncAsync(this) { if (!isFinishing) renderDayOff() }
+        }
     }
 
     // ------------------------------------------------------------------ 저장 / 삭제
@@ -787,5 +804,6 @@ class AlarmEditActivity : Activity() {
         private const val REQ_RINGTONE = 11
         private const val REQ_MUSIC = 12
         private const val REQ_CAMERA = 13
+        private const val REQ_CALENDAR = 14
     }
 }

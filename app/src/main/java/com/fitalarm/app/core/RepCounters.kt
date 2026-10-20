@@ -98,14 +98,21 @@ abstract class RepCounter(val type: ExerciseType) {
     companion object {
         const val NO_PERSON = "사람이 보이지 않아요. 카메라 앞에 서 주세요"
 
-        fun create(type: ExerciseType): RepCounter = when (type) {
-            ExerciseType.SQUAT -> PhaseRepCounter(type, Thresholds.SQUAT_CUES, false, LegBendObserver(useMin = false))
-            ExerciseType.LUNGE -> PhaseRepCounter(type, Thresholds.LUNGE_CUES, false, LegBendObserver(useMin = true))
-            ExerciseType.PUSH_UP -> PhaseRepCounter(type, Thresholds.PUSH_UP_CUES, false, PushUpObserver())
-            ExerciseType.SIT_UP -> PhaseRepCounter(type, Thresholds.SIT_UP_CUES, true, SitUpObserver())
-            ExerciseType.JUMPING_JACK -> PhaseRepCounter(type, Thresholds.JUMPING_JACK_CUES, false, JumpingJackObserver())
-            ExerciseType.ARM_RAISE -> PhaseRepCounter(type, Thresholds.ARM_RAISE_CUES, false, ArmRaiseObserver())
-            ExerciseType.HIGH_KNEES -> HighKneesCounter()
+        /** book: 개인 보정 값. 기본은 보정 끔(고정 기준) */
+        fun create(type: ExerciseType, book: CalibrationBook = CalibrationBook(enabled = false)): RepCounter = when (type) {
+            ExerciseType.SQUAT -> PhaseRepCounter(type, Thresholds.SQUAT_CUES, false,
+                LegBendObserver(useMin = false, depth = CalibrationSpecs.SQUAT_DEPTH.create(book)))
+            ExerciseType.LUNGE -> PhaseRepCounter(type, Thresholds.LUNGE_CUES, false,
+                LegBendObserver(useMin = true, depth = CalibrationSpecs.LUNGE_DEPTH.create(book)))
+            ExerciseType.PUSH_UP -> PhaseRepCounter(type, Thresholds.PUSH_UP_CUES, false,
+                PushUpObserver(CalibrationSpecs.PUSH_UP_ELBOW.create(book)))
+            ExerciseType.SIT_UP -> PhaseRepCounter(type, Thresholds.SIT_UP_CUES, true,
+                SitUpObserver(CalibrationSpecs.SIT_UP_HIP.create(book)))
+            ExerciseType.JUMPING_JACK -> PhaseRepCounter(type, Thresholds.JUMPING_JACK_CUES, false,
+                JumpingJackObserver(CalibrationSpecs.JJ_ARM.create(book), CalibrationSpecs.JJ_LEG.create(book)))
+            ExerciseType.ARM_RAISE -> PhaseRepCounter(type, Thresholds.ARM_RAISE_CUES, false,
+                ArmRaiseObserver(CalibrationSpecs.ARM_RAISE.create(book)))
+            ExerciseType.HIGH_KNEES -> HighKneesCounter(book)
         }
     }
 }
@@ -115,36 +122,12 @@ abstract class RepCounter(val type: ExerciseType) {
  * 각도는 도(°), 비율은 몸 길이 대비 무차원 값.
  */
 object Thresholds {
-    // 스쿼트/런지: depth = (무릎y - 엉덩이y) / 정강이 길이. 서 있으면 ≈1.0, 엉덩이가 무릎 높이면 ≈0
-    const val LEG_REST_DEPTH = 0.75f
-    const val LEG_ACTIVE_DEPTH = 0.45f
+    // 보정하지 않는 보조 기준 (보정 대상 값은 CalibrationSpecs 참고)
     const val LEG_REST_KNEE_ANGLE = 145f
     const val SQUAT_ACTIVE_KNEE_ANGLE = 100f
     const val LUNGE_ACTIVE_KNEE_ANGLE = 110f
-
-    // 팔굽혀펴기: 팔꿈치 각도, 몸통이 수평에 가까워야 함
-    const val PUSH_UP_REST_ELBOW = 150f
-    const val PUSH_UP_ACTIVE_ELBOW = 100f
     const val PUSH_UP_MAX_TORSO_FROM_HORIZONTAL = 45f
-
-    // 윗몸일으키기: 어깨-엉덩이-무릎 각도
-    const val SIT_UP_REST_HIP = 115f
-    const val SIT_UP_ACTIVE_HIP = 75f
     const val SIT_UP_MAX_LYING_TORSO = 40f
-
-    // 점핑잭: 팔 들어올린 각도(아래=0, 위=180), 발 간격 / 어깨 폭
-    const val JJ_REST_ARM = 60f
-    const val JJ_ACTIVE_ARM = 120f
-    const val JJ_REST_LEG_RATIO = 1.1f
-    const val JJ_ACTIVE_LEG_RATIO = 1.4f
-
-    // 만세
-    const val ARM_REST = 60f
-    const val ARM_ACTIVE = 140f
-
-    // 무릎 올리기: (무릎y - 엉덩이y) / 몸통 길이
-    const val KNEE_REST_RATIO = 0.6f
-    const val KNEE_ACTIVE_RATIO = 0.35f
     const val KNEE_MIN_INTERVAL_MS = 250L
 
     val SQUAT_CUES = Cues(
@@ -241,17 +224,12 @@ internal fun bestSide(frame: PoseFrame, pick: (Side) -> IntArray): Side? =
         .maxByOrNull { it.second }
         ?.first
 
-private fun classify(value: Float, restWhen: (Float) -> Boolean, activeWhen: (Float) -> Boolean): Obs = when {
-    activeWhen(value) -> Obs.ACTIVE
-    restWhen(value) -> Obs.REST
-    else -> Obs.BETWEEN
-}
-
 /**
  * 스쿼트(양쪽 평균) / 런지(굽힌 쪽 = 최소값).
- * 정면에서는 무릎 각도가 원근 때문에 덜 줄어드므로 "엉덩이 하강 비율"을 함께 사용.
+ * 정면에서는 무릎 각도가 원근 때문에 덜 줄어드므로 "엉덩이 하강 비율"(보정 대상)을 주로 쓰고
+ * 무릎 각도를 보조 기준으로 함께 사용.
  */
-internal class LegBendObserver(private val useMin: Boolean) : Observer {
+internal class LegBendObserver(private val useMin: Boolean, private val depth: AdaptiveThreshold) : Observer {
     private val depthEma = Ema()
     private val angleEma = Ema()
 
@@ -268,16 +246,19 @@ internal class LegBendObserver(private val useMin: Boolean) : Observer {
             val a = Geo.angleDeg(hip, knee, ankle)
             if (!a.isNaN()) angles.add(a)
         }
-        if (depths.isEmpty()) return Obs.MISSING
+        if (depths.isEmpty()) {
+            depth.interrupt()
+            return Obs.MISSING
+        }
 
-        val rawDepth = if (useMin) depths.min() else depths.average().toFloat()
-        val depth = depthEma.update(rawDepth, tMs)
+        val d = depthEma.update(if (useMin) depths.min() else depths.average().toFloat(), tMs)
         val angle = if (angles.isEmpty()) null else
             angleEma.update(if (useMin) angles.min() else angles.average().toFloat(), tMs)
 
+        val depthObs = depth.classify(d)
         val activeAngle = if (useMin) Thresholds.LUNGE_ACTIVE_KNEE_ANGLE else Thresholds.SQUAT_ACTIVE_KNEE_ANGLE
-        val active = depth <= Thresholds.LEG_ACTIVE_DEPTH || (angle != null && angle <= activeAngle)
-        val rest = depth >= Thresholds.LEG_REST_DEPTH && (angle == null || angle >= Thresholds.LEG_REST_KNEE_ANGLE)
+        val active = depthObs == Obs.ACTIVE || (angle != null && angle <= activeAngle)
+        val rest = depthObs == Obs.REST && (angle == null || angle >= Thresholds.LEG_REST_KNEE_ANGLE)
         return when {
             active -> Obs.ACTIVE
             rest -> Obs.REST
@@ -286,80 +267,94 @@ internal class LegBendObserver(private val useMin: Boolean) : Observer {
     }
 }
 
-internal class PushUpObserver : Observer {
+internal class PushUpObserver(private val elbow: AdaptiveThreshold) : Observer {
     private val elbowEma = Ema()
 
     override fun observe(frame: PoseFrame, tMs: Long): Obs {
-        val side = bestSide(frame) { intArrayOf(it.shoulder, it.elbow, it.wrist, it.hip) } ?: return Obs.MISSING
+        val side = bestSide(frame) { intArrayOf(it.shoulder, it.elbow, it.wrist, it.hip) } ?: run {
+            elbow.interrupt()
+            return Obs.MISSING
+        }
         val sh = frame.visible(side.shoulder)!!
         val el = frame.visible(side.elbow)!!
         val wr = frame.visible(side.wrist)!!
         val hp = frame.visible(side.hip)!!
 
         val torso = Geo.angleFromHorizontal(sh, hp)
-        if (torso.isNaN() || torso > Thresholds.PUSH_UP_MAX_TORSO_FROM_HORIZONTAL) return Obs.BAD_POSTURE
-
+        if (torso.isNaN() || torso > Thresholds.PUSH_UP_MAX_TORSO_FROM_HORIZONTAL) {
+            elbow.interrupt()
+            return Obs.BAD_POSTURE
+        }
         val raw = Geo.angleDeg(sh, el, wr)
         if (raw.isNaN()) return Obs.MISSING
-        val elbow = elbowEma.update(raw, tMs)
-        return classify(elbow, { it >= Thresholds.PUSH_UP_REST_ELBOW }, { it <= Thresholds.PUSH_UP_ACTIVE_ELBOW })
+        return elbow.classify(elbowEma.update(raw, tMs))
     }
 }
 
-internal class SitUpObserver : Observer {
+internal class SitUpObserver(private val hip: AdaptiveThreshold) : Observer {
     private val hipEma = Ema()
 
     override fun observe(frame: PoseFrame, tMs: Long): Obs {
-        val side = bestSide(frame) { intArrayOf(it.shoulder, it.hip, it.knee) } ?: return Obs.MISSING
+        val side = bestSide(frame) { intArrayOf(it.shoulder, it.hip, it.knee) } ?: run {
+            hip.interrupt()
+            return Obs.MISSING
+        }
         val sh = frame.visible(side.shoulder)!!
         val hp = frame.visible(side.hip)!!
         val kn = frame.visible(side.knee)!!
 
         val raw = Geo.angleDeg(sh, hp, kn)
         if (raw.isNaN()) return Obs.MISSING
-        val hipAngle = hipEma.update(raw, tMs)
-
-        if (hipAngle <= Thresholds.SIT_UP_ACTIVE_HIP) return Obs.ACTIVE
-        if (hipAngle >= Thresholds.SIT_UP_REST_HIP) {
+        val obs = hip.classify(hipEma.update(raw, tMs))
+        if (obs == Obs.REST) {
             // 누워 있어야 시작 자세로 인정 (서서 허리 숙이기로 대체 방지)
             val torso = Geo.angleFromHorizontal(hp, sh)
-            return if (!torso.isNaN() && torso <= Thresholds.SIT_UP_MAX_LYING_TORSO) Obs.REST else Obs.BAD_POSTURE
+            if (torso.isNaN() || torso > Thresholds.SIT_UP_MAX_LYING_TORSO) return Obs.BAD_POSTURE
         }
-        return Obs.BETWEEN
+        return obs
     }
 }
 
-internal class JumpingJackObserver : Observer {
+internal class JumpingJackObserver(
+    private val arm: AdaptiveThreshold,
+    private val leg: AdaptiveThreshold,
+) : Observer {
     private val armEma = Ema()
     private val legEma = Ema()
 
     override fun observe(frame: PoseFrame, tMs: Long): Obs {
-        val ls = frame.visible(Lm.LEFT_SHOULDER) ?: return Obs.MISSING
-        val rs = frame.visible(Lm.RIGHT_SHOULDER) ?: return Obs.MISSING
-        val lw = frame.visible(Lm.LEFT_WRIST) ?: return Obs.MISSING
-        val rw = frame.visible(Lm.RIGHT_WRIST) ?: return Obs.MISSING
-        val la = frame.visible(Lm.LEFT_ANKLE) ?: return Obs.MISSING
-        val ra = frame.visible(Lm.RIGHT_ANKLE) ?: return Obs.MISSING
+        val ls = frame.visible(Lm.LEFT_SHOULDER)
+        val rs = frame.visible(Lm.RIGHT_SHOULDER)
+        val lw = frame.visible(Lm.LEFT_WRIST)
+        val rw = frame.visible(Lm.RIGHT_WRIST)
+        val la = frame.visible(Lm.LEFT_ANKLE)
+        val ra = frame.visible(Lm.RIGHT_ANKLE)
+        if (ls == null || rs == null || lw == null || rw == null || la == null || ra == null) {
+            arm.interrupt(); leg.interrupt()
+            return Obs.MISSING
+        }
 
         val shoulderWidth = kotlin.math.abs(ls.x - rs.x)
         val bodyHeight = Geo.dist(Geo.mid(ls, rs), Geo.mid(la, ra))
-        if (bodyHeight < 1e-3f || shoulderWidth < 0.1f * bodyHeight) return Obs.BAD_POSTURE
+        if (bodyHeight < 1e-3f || shoulderWidth < 0.1f * bodyHeight) {
+            arm.interrupt(); leg.interrupt()
+            return Obs.BAD_POSTURE
+        }
 
         val armL = Geo.angleFromDown(ls, lw)
         val armR = Geo.angleFromDown(rs, rw)
         if (armL.isNaN() || armR.isNaN()) return Obs.MISSING
-        val arm = armEma.update((armL + armR) / 2f, tMs)
-        val leg = legEma.update(kotlin.math.abs(la.x - ra.x) / shoulderWidth, tMs)
-
+        val a = arm.classify(armEma.update((armL + armR) / 2f, tMs))
+        val l = leg.classify(legEma.update(kotlin.math.abs(la.x - ra.x) / shoulderWidth, tMs))
         return when {
-            arm >= Thresholds.JJ_ACTIVE_ARM && leg >= Thresholds.JJ_ACTIVE_LEG_RATIO -> Obs.ACTIVE
-            arm <= Thresholds.JJ_REST_ARM && leg <= Thresholds.JJ_REST_LEG_RATIO -> Obs.REST
+            a == Obs.ACTIVE && l == Obs.ACTIVE -> Obs.ACTIVE
+            a == Obs.REST && l == Obs.REST -> Obs.REST
             else -> Obs.BETWEEN
         }
     }
 }
 
-internal class ArmRaiseObserver : Observer {
+internal class ArmRaiseObserver(private val arm: AdaptiveThreshold) : Observer {
     private val armEma = Ema()
 
     override fun observe(frame: PoseFrame, tMs: Long): Obs {
@@ -368,36 +363,45 @@ internal class ArmRaiseObserver : Observer {
             val wr = frame.visible(side.wrist) ?: return@mapNotNull null
             Geo.angleFromDown(sh, wr).takeIf { !it.isNaN() }
         }
-        if (arms.isEmpty()) return Obs.MISSING
-        val arm = armEma.update(arms.average().toFloat(), tMs)
-        return classify(arm, { it <= Thresholds.ARM_REST }, { it >= Thresholds.ARM_ACTIVE })
+        if (arms.isEmpty()) {
+            arm.interrupt()
+            return Obs.MISSING
+        }
+        return arm.classify(armEma.update(arms.average().toFloat(), tMs))
     }
 }
 
-/** 제자리 무릎 올리기: 좌우 다리를 각각 독립된 상태머신으로 세고 합산 */
-internal class HighKneesCounter : RepCounter(ExerciseType.HIGH_KNEES) {
+/** 제자리 무릎 올리기: 좌우 다리를 각각 독립된 상태머신으로 세고 합산 (보정 값은 공유) */
+internal class HighKneesCounter(book: CalibrationBook) : RepCounter(ExerciseType.HIGH_KNEES) {
     private val cues = Thresholds.HIGH_KNEES_CUES
     private val counters = Side.entries.associateWith { PhaseCounter(false, Thresholds.KNEE_MIN_INTERVAL_MS) }
     private val emas = Side.entries.associateWith { Ema() }
+    private val thresholds = Side.entries.associateWith { CalibrationSpecs.HIGH_KNEE.create(book) }
 
     override val count: Int get() = counters.values.sumOf { it.count }
 
     override fun update(frame: PoseFrame?, tMs: Long): CountUpdate {
-        if (frame == null) return CountUpdate(count, false, RepCounter.NO_PERSON, false)
-        val torso = torsoLength(frame) ?: return CountUpdate(count, false, cues.notVisible, false)
+        if (frame == null) {
+            thresholds.values.forEach { it.interrupt() }
+            return CountUpdate(count, false, RepCounter.NO_PERSON, false)
+        }
+        val torso = torsoLength(frame) ?: run {
+            thresholds.values.forEach { it.interrupt() }
+            return CountUpdate(count, false, cues.notVisible, false)
+        }
 
         var counted = false
         var anySide = false
         for (side in Side.entries) {
-            val hip = frame.visible(side.hip) ?: continue
-            val knee = frame.visible(side.knee) ?: continue
+            val hip = frame.visible(side.hip)
+            val knee = frame.visible(side.knee)
+            if (hip == null || knee == null) {
+                thresholds.getValue(side).interrupt()
+                continue
+            }
             anySide = true
             val ratio = emas.getValue(side).update((knee.y - hip.y) / torso, tMs)
-            val obs = when {
-                ratio <= Thresholds.KNEE_ACTIVE_RATIO -> Obs.ACTIVE
-                ratio >= Thresholds.KNEE_REST_RATIO -> Obs.REST
-                else -> Obs.BETWEEN
-            }
+            val obs = thresholds.getValue(side).classify(ratio)
             if (counters.getValue(side).step(obs, tMs)) counted = true
         }
         if (!anySide) return CountUpdate(count, false, cues.notVisible, false)

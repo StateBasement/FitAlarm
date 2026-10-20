@@ -41,6 +41,8 @@ class AlarmRingActivity : Activity() {
     private lateinit var clockText: TextView
     private lateinit var labelText: TextView
     private lateinit var missionBox: LinearLayout
+    private lateinit var announceBox: LinearLayout
+    private lateinit var announceText: TextView
     private lateinit var primaryButton: TextView
     private lateinit var snoozeButton: TextView
 
@@ -50,11 +52,15 @@ class AlarmRingActivity : Activity() {
             handler.postDelayed(this, 1_000L)
         }
     }
-    private val ringListener: () -> Unit = { checkStillRinging() }
+    private val ringListener: () -> Unit = {
+        checkStillRinging()
+        renderAnnouncing()
+    }
     private val graceCheck = Runnable { checkStillRinging() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Palette.apply(this)
         showOverLockScreen()
         setupEdgeToEdge()
         setContentView(buildUi())
@@ -75,6 +81,7 @@ class AlarmRingActivity : Activity() {
         visible = true
         handler.post(clockTick)
         checkStillRinging()
+        renderAnnouncing()
     }
 
     override fun onStop() {
@@ -137,21 +144,21 @@ class AlarmRingActivity : Activity() {
     // ------------------------------------------------------------------ 화면
 
     private fun buildUi(): View {
+        // 라이트: 해 뜨는 복숭아색 → 하늘색, 다크: 새벽빛 보라 → 짙은 청록
         val root = FrameLayout(this).apply {
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(0xFF2A1630.toInt(), 0xFF140F1F.toInt(), Palette.BG),
+                intArrayOf(Palette.RING_TOP, Palette.RING_MID, Palette.RING_BOTTOM),
             )
         }
+        val glass = if (Palette.isDark) 0x22FFFFFF else 0xC8FFFFFF.toInt()
         val content = vbox {
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(28), dp(24), dp(28), dp(28))
+            setPadding(dp(24), dp(36), dp(24), dp(28))
         }
 
-        content.addView(View(this), lp(MATCH, 0, 1f))
-        dateText = label("", 17f, Palette.TEXT_DIM)
+        dateText = label("", 17f, Palette.TEXT_DIM, Fonts.MEDIUM)
         content.addView(dateText, lp(WRAP, WRAP))
-
         val timeRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.BOTTOM
@@ -160,29 +167,60 @@ class AlarmRingActivity : Activity() {
         clockText = label("", 92f, Palette.TEXT, Fonts.LIGHT)
         timeRow.addView(ampmText, lp(WRAP, WRAP).margins(r = dp(8), b = dp(16)))
         timeRow.addView(clockText, lp(WRAP, WRAP))
-        content.addView(timeRow, lp(WRAP, WRAP).margins(t = dp(4)))
+        content.addView(timeRow, lp(WRAP, WRAP).margins(t = dp(2)))
+        labelText = label("", 20f, Palette.TEXT, Fonts.BOLD).apply { gravity = Gravity.CENTER }
+        content.addView(labelText, lp(WRAP, WRAP).margins(t = dp(4)))
 
-        labelText = label("", 20f, Palette.TEXT, Fonts.MEDIUM).apply { gravity = Gravity.CENTER }
-        content.addView(labelText, lp(WRAP, WRAP).margins(t = dp(6)))
-
-        content.addView(View(this), lp(MATCH, 0, 1f))
+        // 음성 안내 카드 (안내 중일 때만)
+        announceText = label("", 15f, Palette.TEXT).apply { setLineSpacing(0f, 1.35f) }
+        announceBox = vbox {
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            background = rounded(glass, dpf(22))
+            visibility = View.GONE
+            addView(hbox {
+                addView(FrameLayout(this@AlarmRingActivity).apply {
+                    background = oval(Palette.ACCENT)
+                    addView(icon(com.fitalarm.app.R.drawable.ic_speaker, Palette.ON_ACCENT, 20),
+                        FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER))
+                }, lp(dp(36), dp(36)).margins(r = dp(10)))
+                addView(vbox {
+                    addView(label("음성 안내 중", 15f, Palette.ACCENT, Fonts.BOLD))
+                    addView(label("안내하는 동안 알람 소리를 20%로 줄였어요", 12.5f, Palette.TEXT_DIM), lp().margins(t = dp(2)))
+                }, lp(0, WRAP, 1f))
+            })
+            addView(announceText, lp().margins(t = dp(10)))
+        }
+        content.addView(announceBox, lp().margins(t = dp(20)))
 
         missionBox = vbox {
-            setPadding(dp(20), dp(18), dp(20), dp(18))
-            background = rounded(0x14FFFFFF, dpf(24), 0x22FFFFFF, dp(1))
+            setPadding(dp(18), dp(16), dp(18), dp(10))
+            background = rounded(glass, dpf(22))
         }
-        content.addView(missionBox, lp())
+        content.addView(missionBox, lp().margins(t = dp(14)))
 
         content.addView(View(this), lp(MATCH, 0, 1f))
 
         primaryButton = pillButton("", filled = true, heightDp = 64) { onPrimary() }.apply { textSize = 19f }
         content.addView(primaryButton, lp())
-        snoozeButton = pillButton("", filled = false, heightDp = 56) { onSnooze() }
+        snoozeButton = pillButton("", filled = false, heightDp = 56) { onSnooze() }.apply {
+            background = ripple(rounded(glass, dpf(28), Palette.OUTLINE, dp(1.5f)), rounded(android.graphics.Color.WHITE, dpf(28)))
+        }
         content.addView(snoozeButton, lp().margins(t = dp(12)))
 
         root.addView(content, FrameLayout.LayoutParams(MATCH, MATCH))
         root.applySystemBarPadding()
         return root
+    }
+
+    private fun renderAnnouncing() {
+        if (!::announceBox.isInitialized) return
+        val text = RingState.announcing
+        if (text != null && RingState.ringingAlarmId == alarmId) {
+            announceText.text = "“$text”"
+            announceBox.visibility = View.VISIBLE
+        } else {
+            announceBox.visibility = View.GONE
+        }
     }
 
     private fun renderClock() {
@@ -202,14 +240,15 @@ class AlarmRingActivity : Activity() {
         missionBox.removeAllViews()
         if (a != null && a.hasMission) {
             missionBox.visibility = View.VISIBLE
-            missionBox.addView(label("오늘의 운동 미션", 13f, Palette.ACCENT, Fonts.MEDIUM), lp().margins(b = dp(10)))
+            missionBox.addView(label("오늘의 운동 미션", 13f, Palette.ACCENT, Fonts.BOLD), lp().margins(b = dp(10)))
             a.routine.forEachIndexed { i, step ->
                 missionBox.addView(hbox {
                     addView(label("${i + 1}", 14f, Palette.ON_ACCENT, Fonts.BOLD).apply {
                         gravity = Gravity.CENTER
                         background = oval(Palette.ACCENT)
                     }, lp(dp(26), dp(26)).margins(r = dp(12)))
-                    addView(label(step.type.title, 17f), lp(0, WRAP, 1f))
+                    addView(label(step.type.title, 17f, Palette.TEXT, Fonts.MEDIUM), lp(0, WRAP, 1f))
+                    addView(label(step.type.part.title, 13f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(r = dp(10)))
                     addView(label("${step.reps}회", 17f, Palette.TEXT, Fonts.MEDIUM))
                 }, lp().margins(b = dp(8)))
             }
@@ -226,6 +265,7 @@ class AlarmRingActivity : Activity() {
         } else {
             snoozeButton.visibility = View.GONE
         }
+        renderAnnouncing()
     }
 
     private fun onPrimary() {

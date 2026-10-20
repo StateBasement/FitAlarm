@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">운동 알람</string>
+    <string name="widget_description">다음 알람과 오늘의 운동, 연속 성공 일수를 보여줘요</string>
 </resources>

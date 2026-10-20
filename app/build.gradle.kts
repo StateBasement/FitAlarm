@@ -11,8 +11,18 @@ android {
         applicationId = "com.fitalarm.app"
         minSdk = 26          // Android 8.0 이상
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
+    }
+
+    // 빌드할 때마다 서명 키가 바뀌면 새 APK를 기존 앱 위에 설치할 수 없으므로 고정 키 사용
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("fitalarm-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

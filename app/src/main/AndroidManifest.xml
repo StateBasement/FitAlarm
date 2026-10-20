@@ -18,6 +18,11 @@
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- 공휴일 목록 업데이트 (구글 공개 공휴일 달력) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 폰 기본 달력의 공휴일 달력 읽기 (사용자가 허용할 때만) -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <application
         android:allowBackup="true"
@@ -56,7 +61,11 @@
             android:theme="@style/Theme.FitAlarm.Ring"
             tools:ignore="DiscouragedApi,LockedOrientationActivity" />
 
-        <!-- 카메라 모션 인식 미션 화면 (연습 모드 겸용) -->
+        <activity
+            android:name=".ui.DaysOffActivity"
+            android:exported="false" />
+
+        <!-- 카메라 모션 인식 미션 화면 (연습·보너스 운동 겸용) -->
         <activity
             android:name=".ui.MissionActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
@@ -74,6 +83,24 @@
         <receiver
             android:name=".alarm.AlarmReceiver"
             android:exported="false" />
+
+        <!-- 공휴일 목록 하루 한 번 동기화 -->
+        <service
+            android:name=".holiday.HolidaySyncJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <!-- 홈 화면 위젯 -->
+        <receiver
+            android:name=".widget.AlarmWidget"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/alarm_widget_info" />
+        </receiver>
 
         <!-- 재부팅, 시간/시간대 변경, 앱 업데이트 시 알람 재등록 (모두 시스템만 보낼 수 있는 보호된 브로드캐스트) -->
         <receiver

@@ -136,3 +136,111 @@ class ProgressBarView(context: Context) : View(context) {
         }
     }
 }
+
+/**
+ * "밀어서 시작" 슬라이더. 잠결에 실수로 눌러 시작되지 않도록 끝까지 밀어야만 onComplete.
+ * 접근성 서비스(TalkBack)에서는 두 번 탭(클릭)으로도 시작됩니다.
+ */
+class SlideToStartView(context: Context, private val text: String, private val onComplete: () -> Unit) : View(context) {
+    private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = context.dpf(17)
+        typeface = Fonts.BOLD
+    }
+    private val arrow = context.getDrawable(com.fitalarm.app.R.drawable.ic_arrow_right)?.mutate()
+    private val rect = RectF()
+    private var offset = 0f          // 손잡이 이동 거리(px)
+    private var dragging = false
+    private var downX = 0f
+    private var done = false
+
+    /** 터치가 시작되면 호출 (자동 닫힘 타이머 정지 등) */
+    var onTouchStart: (() -> Unit)? = null
+
+    init {
+        isClickable = true
+        isFocusable = true
+        contentDescription = text
+    }
+
+    private val pad get() = context.dpf(4)
+    private val thumbSize get() = height - pad * 2
+    private val maxOffset get() = (width - pad * 2 - thumbSize).coerceAtLeast(1f)
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val h = height.toFloat()
+        trackPaint.color = Palette.ACCENT_SOFT
+        rect.set(0f, 0f, width.toFloat(), h)
+        canvas.drawRoundRect(rect, h / 2, h / 2, trackPaint)
+
+        val progress = offset / maxOffset
+        textPaint.color = Palette.ON_ACCENT_SOFT
+        textPaint.alpha = (255 * (1f - progress).coerceIn(0f, 1f)).toInt()
+        val ty = h / 2 - (textPaint.descent() + textPaint.ascent()) / 2
+        canvas.drawText(text, width / 2f + thumbSize / 2, ty, textPaint)
+
+        thumbPaint.color = Palette.ACCENT
+        val cx = pad + offset + thumbSize / 2
+        canvas.drawCircle(cx, h / 2, thumbSize / 2, thumbPaint)
+        arrow?.let {
+            val s = (thumbSize * 0.45f).toInt()
+            it.setTint(Palette.ON_ACCENT)
+            it.setBounds((cx - s / 2).toInt(), (h / 2 - s / 2).toInt(), (cx + s / 2).toInt(), (h / 2 + s / 2).toInt())
+            it.draw(canvas)
+        }
+    }
+
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+        if (done) return true
+        when (event.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                onTouchStart?.invoke()
+                val cx = pad + offset + thumbSize / 2
+                dragging = kotlin.math.abs(event.x - cx) < thumbSize
+                downX = event.x - offset
+                parent?.requestDisallowInterceptTouchEvent(true)
+                return true
+            }
+            android.view.MotionEvent.ACTION_MOVE -> if (dragging) {
+                offset = (event.x - downX).coerceIn(0f, maxOffset)
+                invalidate()
+                if (offset >= maxOffset * 0.92f) finish()
+            }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                if (dragging && offset >= maxOffset * 0.85f) finish() else springBack()
+                dragging = false
+            }
+        }
+        return true
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        finish()
+        return true
+    }
+
+    private fun finish() {
+        if (done) return
+        done = true
+        offset = maxOffset
+        invalidate()
+        onComplete()
+    }
+
+    private fun springBack() {
+        val from = offset
+        android.animation.ValueAnimator.ofFloat(from, 0f).apply {
+            duration = 200
+            addUpdateListener { a ->
+                offset = a.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
+    }
+}

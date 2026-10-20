@@ -14,15 +14,18 @@ data class MissionUpdate(
     val totalReps: Int,
 )
 
-/** 여러 운동으로 된 루틴을 순서대로 진행 */
-class MissionSession(val routine: List<RoutineStep>) {
+/** 여러 운동으로 된 루틴을 순서대로 진행. book: 개인 보정 값 (기본: 보정 끔) */
+class MissionSession(
+    val routine: List<RoutineStep>,
+    private val book: CalibrationBook = CalibrationBook(enabled = false),
+) {
     init {
         require(routine.isNotEmpty()) { "routine must not be empty" }
     }
 
     var stepIndex: Int = 0
         private set
-    private var counter: RepCounter = RepCounter.create(routine[0].type)
+    private var counter: RepCounter = RepCounter.create(routine[0].type, book)
     private var completedReps = 0
 
     val totalReps: Int = routine.sumOf { it.reps }
@@ -53,7 +56,7 @@ class MissionSession(val routine: List<RoutineStep>) {
             stepDone = true
             completedReps += step.reps
             stepIndex++
-            if (!isComplete) counter = RepCounter.create(routine[stepIndex].type)
+            if (!isComplete) counter = RepCounter.create(routine[stepIndex].type, book)
         }
         val done = if (stepDone) completedReps else completedReps + stepCount
         return MissionUpdate(

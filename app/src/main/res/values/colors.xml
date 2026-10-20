@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FF0E1014</color>
-    <color name="ring_bg">#FF120E1C</color>
-    <color name="accent">#FFFF7A45</color>
-    <color name="dialog_bg">#FF1B1F26</color>
-    <color name="ic_launcher_background">#FFFF7A45</color>
+    <!-- 라이트 모드 (values-night 에 다크 모드 값) -->
+    <color name="bg">#FFF4FAF6</color>
+    <color name="ring_bg">#FFFFF4E6</color>
+    <color name="accent">#FF15803D</color>
+    <color name="on_accent">#FFFFFFFF</color>
+    <color name="dialog_bg">#FFFFFFFF</color>
+    <color name="text_primary">#FF10231A</color>
+    <color name="text_secondary">#FF4B5F55</color>
+    <color name="ic_launcher_background">#FF15803D</color>
+    <color name="widget_bg_start">#FFDCF5E5</color>
+    <color name="widget_bg_end">#FFE2F2FF</color>
+    <color name="widget_label">#FF14532D</color>
+    <color name="widget_text">#FF10231A</color>
+    <color name="widget_detail">#FF33463C</color>
 </resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FitAlarm" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:colorPrimaryDark">@color/bg</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:alertDialogTheme">@style/Theme.FitAlarm.Dialog</item>
+        <item name="android:datePickerDialogTheme">@style/Theme.FitAlarm.Dialog</item>
+    </style>
+
+    <style name="Theme.FitAlarm.Dialog" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:colorBackground">@color/dialog_bg</item>
+    </style>
+
+    <style name="Theme.FitAlarm.Ring" parent="Theme.FitAlarm">
+        <item name="android:windowBackground">@color/ring_bg</item>
+    </style>
+</resources>

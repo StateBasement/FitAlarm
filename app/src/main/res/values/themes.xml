@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 알람 앱 특성상 어두운 테마 하나로 통일. 외부 라이브러리 없이 프레임워크 Material 테마만 사용 -->
-    <style name="Theme.FitAlarm" parent="android:Theme.Material.NoActionBar">
+    <!-- 시스템 라이트/다크 설정을 따름: 라이트는 이 파일, 다크는 values-night/themes.xml -->
+    <style name="Theme.FitAlarm" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:colorPrimary">@color/accent</item>
         <item name="android:colorPrimaryDark">@color/bg</item>
         <item name="android:colorAccent">@color/accent</item>
@@ -9,13 +9,15 @@
         <item name="android:windowBackground">@color/bg</item>
         <item name="android:statusBarColor">@color/bg</item>
         <item name="android:navigationBarColor">@color/bg</item>
-        <item name="android:textColorPrimary">#FFF2F4F7</item>
-        <item name="android:textColorSecondary">#FF98A1AE</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:alertDialogTheme">@style/Theme.FitAlarm.Dialog</item>
+        <item name="android:datePickerDialogTheme">@style/Theme.FitAlarm.Dialog</item>
     </style>
 
-    <style name="Theme.FitAlarm.Dialog" parent="android:Theme.Material.Dialog.Alert">
+    <style name="Theme.FitAlarm.Dialog" parent="android:Theme.Material.Light.Dialog.Alert">
         <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorPrimary">@color/accent</item>
         <item name="android:colorBackground">@color/dialog_bg</item>
     </style>
 

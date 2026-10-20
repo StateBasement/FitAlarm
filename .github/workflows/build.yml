@@ -23,11 +23,28 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Download Google holiday feed (for parser check)
+        continue-on-error: true
+        run: |
+          curl -sSL --max-time 30 -o holidays.ics \
+            "https://calendar.google.com/calendar/ical/ko.south_korea%23holiday%40group.v.calendar.google.com/public/basic.ics" || true
+          ls -la holidays.ics || true
+
       - name: Unit tests + build debug APK
+        env:
+          HOLIDAY_ICS_FILE: ${{ github.workspace }}/holidays.ics
         run: |
           chmod +x gradlew
           set -o pipefail
           ./gradlew --no-daemon --stacktrace test assembleDebug 2>&1 | tee build.log
+
+      - name: Report holiday feed check
+        if: always()
+        run: |
+          if [ -f app/build/holiday-feed-summary.txt ]; then
+            msg=$(sed 's/%/%25/g' app/build/holiday-feed-summary.txt | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Holiday feed::${msg}"
+          fi
 
       - name: Report build errors
         if: failure()

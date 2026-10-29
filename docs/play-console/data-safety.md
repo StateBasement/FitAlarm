@@ -6,7 +6,7 @@ Play Console > 앱 선택 > **앱 콘텐츠** 에서 아래 순서대로 입력�
 
 - URL: `https://github.com/StateBasement/FitAlarm/blob/main/docs/privacy-policy.md`
 - 앱 안에서도 **설정 > 정보 > 개인정보처리방침** 에서 같은 페이지가 열립니다 (Google Play 는 Play Console 과 앱 안 양쪽에 방침을 요구).
-- 올리기 전에 방침 문서의 `[개발자 이름]`, `[문의 이메일]` 을 실제 값으로 바꿔야 합니다.
+- 방침의 개발자 정보: Dev_light / kwangge95@gmail.com (Play Console 개발자 정보와 같게 유지)
 - 저장소를 비공개로 바꾸면 이 주소가 열리지 않으니, 그 전에 방침을 공개 위치(GitHub Pages, 별도 공개 저장소, 개인 웹사이트 등)로 옮기고 앱의 주소(`SettingsPage.kt` 의 `PRIVACY_POLICY_URL`)와 Play Console 주소를 함께 바꾸세요.
 
 ## 2. 데이터 보안 양식

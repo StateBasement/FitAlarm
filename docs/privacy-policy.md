@@ -2,7 +2,7 @@
 
 시행일: 2026년 10월 29일
 
-[개발자 이름](이하 "개발자")은 안드로이드 앱 「운동 알람」(이하 "앱")을 제공하면서 「개인정보 보호법」 등 관련 법령을 지키고, 이용자의 개인정보가 어떻게 다뤄지는지 다음과 같이 알려드립니다.
+Dev_light(이하 "개발자")은 안드로이드 앱 「운동 알람」(이하 "앱")을 제공하면서 「개인정보 보호법」 등 관련 법령을 지키고, 이용자의 개인정보가 어떻게 다뤄지는지 다음과 같이 알려드립니다.
 
 ## 1. 요약
 
@@ -78,8 +78,8 @@
 
 ## 11. 개인정보 보호책임자 및 문의
 
-- 개인정보 보호책임자: [개발자 이름]
-- 이메일: [문의 이메일]
+- 개인정보 보호책임자: Dev_light
+- 이메일: kwangge95@gmail.com
 
 개인정보 침해에 대한 신고나 상담은 개인정보침해신고센터(privacy.kisa.or.kr, 국번 없이 118), 개인정보분쟁조정위원회(www.kopico.go.kr, 1833-6972)에 문의할 수 있습니다.
 
@@ -100,4 +100,4 @@ Effective date: October 29, 2026
 - Once a day the app downloads Google's public "Holidays in South Korea" calendar to pick up newly designated holidays. No personal data is sent (your IP address is visible to Google as with any internet request). You can turn this off in Settings.
 - The app uses **Google ML Kit** for on-device pose detection. According to Google's ML Kit data disclosure, ML Kit sends device information (manufacturer, model, OS version, available ML accelerators), app information (package name, app version), a per-installation identifier that does not uniquely identify a user or physical device, performance metrics, API configuration, feature version, event types and error codes to Google over HTTPS, for diagnostics and usage analytics. It does not include camera images. See Google's [ML Kit data disclosure](https://developers.google.com/ml-kit/android-data-disclosure) and [Privacy Policy](https://policies.google.com/privacy).
 - No advertising or other analytics SDKs are used. The app is not directed at children under 14.
-- Contact: [Developer name], [Contact email]
+- Contact: Dev_light, kwangge95@gmail.com

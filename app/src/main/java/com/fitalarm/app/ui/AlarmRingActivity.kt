@@ -67,13 +67,14 @@ class AlarmRingActivity : Activity() {
         blockBackButton()
         // 미션 화면이 위에 떠 있는 동안에도 알람 종료를 감지하도록 onCreate~onDestroy 동안 구독
         RingState.addListener(ringListener)
-        handleIntent(intent)
+        // 화면 회전 등으로 다시 만들어진 경우에는 서비스 시작·미션 시작을 반복하지 않음
+        handleIntent(intent, fresh = savedInstanceState == null)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleIntent(intent)
+        handleIntent(intent, fresh = true)
     }
 
     override fun onStart() {
@@ -99,12 +100,12 @@ class AlarmRingActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun handleIntent(i: Intent) {
+    private fun handleIntent(i: Intent, fresh: Boolean) {
         alarmId = i.getIntExtra(EXTRA_ALARM_ID, -1)
         boundAt = SystemClock.elapsedRealtime()
         seenRinging = RingState.ringingAlarmId == alarmId
 
-        if (i.getBooleanExtra(EXTRA_START_SERVICE, false) && RingState.ringingAlarmId != alarmId && alarmId > 0) {
+        if (fresh && i.getBooleanExtra(EXTRA_START_SERVICE, false) && RingState.ringingAlarmId != alarmId && alarmId > 0) {
             // 대비 경로: 리시버가 서비스를 못 띄웠을 때 화면(포그라운드)에서 시작
             try {
                 startForegroundService(AlarmService.startIntent(this, alarmId))
@@ -118,7 +119,7 @@ class AlarmRingActivity : Activity() {
         handler.removeCallbacks(graceCheck)
         handler.postDelayed(graceCheck, GRACE_MS)
 
-        if (i.getBooleanExtra(EXTRA_START_MISSION, false) && alarm?.hasMission == true) {
+        if (fresh && i.getBooleanExtra(EXTRA_START_MISSION, false) && alarm?.hasMission == true) {
             i.removeExtra(EXTRA_START_MISSION)
             startMission()
         }

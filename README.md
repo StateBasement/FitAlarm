@@ -26,6 +26,17 @@
 ./gradlew test                 # 알람 계산·운동 인식 단위 테스트 실행
 ```
 
+### Google Play 출시용 파일 (AAB)
+
+- 앱은 Android 16(API 36)을 타깃합니다 (Google Play 요건: 2026-08-31 부터 신규 앱·업데이트는 API 36 이상).
+- GitHub Actions 가 빌드할 때마다 **테스트용 APK**(Releases)와 **Play 스토어 업로드용 AAB**(실행 페이지 Artifacts → `FitAlarm-playstore-aab`)를 만듭니다.
+- AAB 는 저장소 Secrets 에 등록한 **업로드 키**로 서명됩니다. 등록할 값 4개:
+  `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_STORE_PASSWORD`, `UPLOAD_KEY_ALIAS`, `UPLOAD_KEY_PASSWORD`
+  (Settings → Secrets and variables → Actions → New repository secret). 키 파일은 저장소에 절대 올리지 마세요.
+- Secrets 가 없으면 AAB 는 테스트 키로 시험 빌드만 하고 올리지 않습니다.
+- 출시 빌드(release)와 테스트 빌드(debug)는 서명 키가 달라서, 테스트용 APK 를 설치한 폰에 Play 스토어 버전을 깔려면 테스트 앱을 먼저 지워야 합니다.
+- 개인정보처리방침: `docs/privacy-policy.md`, Play Console 데이터 보안 양식 답안: `docs/play-console/data-safety.md`
+
 ## 2. 처음 실행 후 확인할 권한
 
 메인 화면 위쪽에 노란 안내 카드가 뜨면 탭해서 허용하세요. 모두 허용되면 카드가 사라집니다.

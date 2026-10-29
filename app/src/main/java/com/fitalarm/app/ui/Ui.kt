@@ -291,16 +291,21 @@ fun Activity.setupEdgeToEdge(lightBars: Boolean = !Palette.isDark) {
         val mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
         decor.windowInsetsController?.setSystemBarsAppearance(if (lightBars) mask else 0, mask)
     } else {
-        var flags = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
-        if (lightBars) flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        @Suppress("DEPRECATION")
-        decor.systemUiVisibility = flags
+        legacyEdgeToEdge(decor, lightBars)
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         window.isNavigationBarContrastEnforced = false
     }
+}
+
+/** Android 10 이하 전용 (예전 방식 플래그) */
+@Suppress("DEPRECATION")
+private fun legacyEdgeToEdge(decor: View, lightBars: Boolean) {
+    var flags = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+    if (lightBars) flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+    decor.systemUiVisibility = flags
 }
 
 /** 상태바·내비게이션바·노치(·키보드) 만큼 안쪽 여백을 더함 */

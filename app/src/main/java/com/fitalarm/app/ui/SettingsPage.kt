@@ -168,12 +168,34 @@ class SettingsPage(host: MainActivity) : Page(host) {
                 addView(pillButton("홈 화면에 위젯 추가", filled = true, heightDp = 46) { pinWidget() }, lp().margins(b = dp(8)))
             }, lp().margins(t = dp(12)))
 
+            // ------------------------------------------------ 정보
             val version = try {
                 packageManager.getPackageInfo(packageName, 0).versionName
             } catch (e: Exception) {
                 ""
             }
-            body.addView(label("운동 알람 $version", 12f, Palette.TEXT_DIM).apply { gravity = Gravity.CENTER }, lp().margins(t = dp(16)))
+            body.addView(card("정보") {
+                val (policyRow, policyValue) = valueRow(
+                    "개인정보처리방침",
+                    "카메라 영상과 기록은 기기 안에서만 처리돼요",
+                ) { openPrivacyPolicy() }
+                policyValue.text = "보기"
+                addView(policyRow)
+                val (versionRow, versionValue) = valueRow("버전") { }
+                versionValue.text = version ?: ""
+                versionValue.setTextColor(Palette.TEXT_DIM)
+                versionRow.isClickable = false
+                versionRow.background = null
+                addView(versionRow)
+            }, lp().margins(t = dp(12)))
+        }
+    }
+
+    private fun openPrivacyPolicy() {
+        try {
+            ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL)))
+        } catch (e: Exception) {
+            ctx.toast("브라우저를 열 수 없어요. $PRIVACY_POLICY_URL")
         }
     }
 
@@ -321,5 +343,10 @@ class SettingsPage(host: MainActivity) : Page(host) {
         } else {
             ctx.toast("홈 화면을 길게 누르고 위젯 > 운동 알람을 선택하세요")
         }
+    }
+
+    companion object {
+        /** Play Console 에 입력하는 개인정보처리방침 주소와 같아야 함 */
+        const val PRIVACY_POLICY_URL = "https://github.com/StateBasement/FitAlarm/blob/main/docs/privacy-policy.md"
     }
 }

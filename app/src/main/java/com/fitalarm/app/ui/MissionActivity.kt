@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.ToneGenerator
@@ -149,6 +150,19 @@ class MissionActivity : Activity(), PoseCamera.Listener {
             startService(AlarmService.missionStateIntent(this, true))
         }
         startCameraOrAsk()
+    }
+
+    /**
+     * Android 16 부터 태블릿·폴더블(가로 600dp 이상)에서는 세로 고정이 무시되어 화면이 돌아갈 수 있음.
+     * 화면 방향이 바뀌면 카메라를 다시 열어 포즈 인식용 회전값과 미리보기 비율을 새로 계산.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val cam = camera ?: return
+        if (!finished && cam.isRunning) {
+            cam.stop()
+            cam.start()
+        }
     }
 
     override fun onPause() {

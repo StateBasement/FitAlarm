@@ -8,3 +8,8 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# 출시용 서명 키는 절대 저장소에 올리지 않음 (테스트용 fitalarm-debug.keystore 만 예외)
+*.jks
+upload-keystore*
+keystore.properties

@@ -89,6 +89,9 @@ class PoseCamera(
     // ---- 여러 스레드에서 읽기 ----
     @Volatile private var busy = false
     @Volatile private var active = false
+
+    /** start() 이후 stop() 전까지 true */
+    val isRunning: Boolean get() = active
     @Volatile private var bufferSize = Size(640, 480)
     @Volatile private var rotationDegrees = 0
     @Volatile private var uprightW = 480

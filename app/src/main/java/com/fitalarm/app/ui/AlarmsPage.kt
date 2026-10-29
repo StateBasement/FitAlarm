@@ -29,6 +29,7 @@ import com.fitalarm.app.core.RoutineStep
 import com.fitalarm.app.data.AlarmRepository
 import com.fitalarm.app.data.HolidayRepository
 import com.fitalarm.app.data.RecordRepository
+import com.fitalarm.app.monetize.AdPlacement
 import com.fitalarm.app.systemService
 import java.time.Instant
 import java.time.LocalDate
@@ -44,6 +45,7 @@ class AlarmsPage(host: MainActivity) : Page(host) {
     private lateinit var heroSub: TextView
     private lateinit var bannerContainer: LinearLayout
     private lateinit var listContainer: LinearLayout
+    private lateinit var adSlot: AdSlotView
 
     override val root: View = build()
 
@@ -89,6 +91,9 @@ class AlarmsPage(host: MainActivity) : Page(host) {
         content.addView(bannerContainer, lp())
         listContainer = vbox()
         content.addView(listContainer, lp())
+        // 광고 자리: 알람 목록 맨 아래 (광고를 켜기 전에는 보이지 않음)
+        adSlot = AdSlotView(this, AdPlacement.ALARM_LIST_BOTTOM)
+        content.addView(adSlot, lp().margins(t = dp(4)))
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -124,6 +129,7 @@ class AlarmsPage(host: MainActivity) : Page(host) {
         } else {
             alarms.forEach { listContainer.addView(alarmCard(it), lp().margins(b = dp(12))) }
         }
+        adSlot.refresh()
     }
 
     private fun dp(v: Number) = ctx.dp(v)

@@ -13,6 +13,7 @@ import com.fitalarm.app.core.ExerciseType
 import com.fitalarm.app.core.RecordStats
 import com.fitalarm.app.data.HolidayRepository
 import com.fitalarm.app.data.RecordRepository
+import com.fitalarm.app.monetize.AdPlacement
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -22,6 +23,7 @@ class RecordsPage(host: MainActivity) : Page(host) {
     private var month: YearMonth = YearMonth.now()
     private lateinit var monthTitle: TextView
     private lateinit var body: LinearLayout
+    private val adSlot = AdSlotView(host, AdPlacement.RECORDS_BOTTOM)
 
     override val root: View = build()
 
@@ -145,6 +147,10 @@ class RecordsPage(host: MainActivity) : Page(host) {
                 }
             }
             body.addView(reps, lp().margins(t = dp(12)))
+
+            // 광고 자리: 기록 화면 맨 아래 (광고를 켜기 전에는 보이지 않음)
+            body.addView(adSlot, lp().margins(t = dp(12)))
+            adSlot.refresh()
         }
     }
 

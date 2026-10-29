@@ -18,8 +18,8 @@ android {
         applicationId = "com.fitalarm.app"
         minSdk = 26          // Android 8.0 이상
         targetSdk = 36       // Google Play: 2026-08-31 부터 신규 앱·업데이트는 Android 16(API 36) 이상
-        versionCode = 3
-        versionName = "2.1.0"
+        versionCode = 4
+        versionName = "2.2.0"
     }
 
     signingConfigs {

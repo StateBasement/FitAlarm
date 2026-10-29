@@ -24,6 +24,8 @@ import com.fitalarm.app.data.CalibrationRepository
 import com.fitalarm.app.data.HolidayRepository
 import com.fitalarm.app.data.SettingsRepository
 import com.fitalarm.app.holiday.HolidaySync
+import com.fitalarm.app.monetize.AdPlacement
+import com.fitalarm.app.monetize.Monetization
 import com.fitalarm.app.voice.Speaker
 import com.fitalarm.app.widget.AlarmWidget
 import java.time.Instant
@@ -36,6 +38,9 @@ class SettingsPage(host: MainActivity) : Page(host) {
     private val ctx = host
     private lateinit var body: LinearLayout
     private var preview: Speaker? = null
+    private val adSlot = AdSlotView(host, AdPlacement.SETTINGS_BOTTOM)
+    private var versionTaps = 0
+    private var versionTapAt = 0L
 
     override val root: View = build()
 
@@ -168,6 +173,13 @@ class SettingsPage(host: MainActivity) : Page(host) {
                 addView(pillButton("홈 화면에 위젯 추가", filled = true, heightDp = 46) { pinWidget() }, lp().margins(b = dp(8)))
             }, lp().margins(t = dp(12)))
 
+            // ------------------------------------------------ 응원(후원) · 광고 자리 (켜기 전에는 보이지 않음)
+            if (Monetization.supportVisible(this)) {
+                body.addView(host.supportCard { host.refreshCurrent() }, lp().margins(t = dp(12)))
+            }
+            body.addView(adSlot, lp().margins(t = dp(12)))
+            adSlot.refresh()
+
             // ------------------------------------------------ 정보
             val version = try {
                 packageManager.getPackageInfo(packageName, 0).versionName
@@ -181,13 +193,30 @@ class SettingsPage(host: MainActivity) : Page(host) {
                 ) { openPrivacyPolicy() }
                 policyValue.text = "보기"
                 addView(policyRow)
-                val (versionRow, versionValue) = valueRow("버전") { }
+                val (versionRow, versionValue) = valueRow("버전") { onVersionTapped() }
                 versionValue.text = version ?: ""
                 versionValue.setTextColor(Palette.TEXT_DIM)
-                versionRow.isClickable = false
-                versionRow.background = null
                 addView(versionRow)
             }, lp().margins(t = dp(12)))
+
+            if (Monetization.isPreview(this)) {
+                body.addView(host.monetizePreviewCard { host.refreshCurrent() }, lp().margins(t = dp(12)))
+            }
+        }
+    }
+
+    /** 개발자용: 버전을 3초 안에 7번 누르면 수익화 미리보기 켜고 끄기 */
+    private fun onVersionTapped() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - versionTapAt > 3_000L) versionTaps = 0
+        versionTapAt = now
+        versionTaps++
+        if (versionTaps >= 7) {
+            versionTaps = 0
+            val on = !Monetization.isPreview(ctx)
+            Monetization.setPreview(ctx, on)
+            ctx.toast(if (on) "수익화 미리보기를 켰어요 (개발자용)" else "수익화 미리보기를 껐어요")
+            refresh()
         }
     }
 

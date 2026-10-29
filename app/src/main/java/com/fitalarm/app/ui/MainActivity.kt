@@ -68,6 +68,8 @@ class MainActivity : Activity() {
         refreshCurrent()
         handler.post(ticker)
         maybeAskNotificationPermission()
+        // 의미 있는 순간(연속 성공 등)에만 응원 팝업 한 번 (기본 꺼짐, 다른 창이 떠 있으면 건너뜀)
+        handler.postDelayed({ if (!isFinishing && hasWindowFocus()) SupportPromptRunner.maybeShow(this) }, 900L)
     }
 
     override fun onPause() {

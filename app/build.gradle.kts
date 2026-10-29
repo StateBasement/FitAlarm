@@ -18,8 +18,8 @@ android {
         applicationId = "com.fitalarm.app"
         minSdk = 26          // Android 8.0 이상
         targetSdk = 36       // Google Play: 2026-08-31 부터 신규 앱·업데이트는 Android 16(API 36) 이상
-        versionCode = 4
-        versionName = "2.2.0"
+        versionCode = 5
+        versionName = "2.3.0"
     }
 
     signingConfigs {
@@ -42,12 +42,21 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 로 코드 축소·난독화 (코드 분석·위변조를 어렵게 하고 용량도 줄임)
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             if (hasUploadKey) signingConfig = signingConfigs.getByName("upload")
+        }
+        // 출시(release)와 똑같이 난독화한 테스트용 빌드. 테스트 키로 서명해 기존 테스트 앱 위에 덮어 설치 가능
+        create("qa") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
         }
     }
 

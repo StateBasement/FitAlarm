@@ -146,7 +146,10 @@ class SettingsPage(host: MainActivity) : Page(host) {
             body.addView(card("백업") {
                 addView(label("알람, 설정, 내 휴무일, 개인 보정, 기록을 파일 하나로 저장해요. 폰을 바꿀 때 사용하세요.", 13f, Palette.TEXT_DIM).apply {
                     setLineSpacing(0f, 1.2f)
-                }, lp().margins(t = dp(4), b = dp(10)))
+                }, lp().margins(t = dp(4), b = dp(6)))
+                addView(label("백업 파일은 암호화되지 않아요. 다른 사람에게 보내거나 공개된 곳에 올리지 마세요.", 12.5f, Palette.WARN).apply {
+                    setLineSpacing(0f, 1.2f)
+                }, lp().margins(b = dp(10)))
                 addView(hbox {
                     addView(pillButton("백업 내보내기", filled = false, heightDp = 46) { exportBackup() }, lp(0, WRAP, 1f).margins(r = dp(5)))
                     addView(pillButton("백업에서 복원", filled = false, heightDp = 46) { importBackup() }, lp(0, WRAP, 1f).margins(l = dp(5)))
@@ -193,6 +196,9 @@ class SettingsPage(host: MainActivity) : Page(host) {
                 ) { openPrivacyPolicy() }
                 policyValue.text = "보기"
                 addView(policyRow)
+                val (termsRow, termsValue) = valueRow("이용약관", "운동 안전과 알람의 한계 안내 포함") { openUrl(OnboardingActivity.TERMS_URL) }
+                termsValue.text = "보기"
+                addView(termsRow)
                 val (versionRow, versionValue) = valueRow("버전") { onVersionTapped() }
                 versionValue.text = version ?: ""
                 versionValue.setTextColor(Palette.TEXT_DIM)
@@ -220,11 +226,13 @@ class SettingsPage(host: MainActivity) : Page(host) {
         }
     }
 
-    private fun openPrivacyPolicy() {
+    private fun openPrivacyPolicy() = openUrl(PRIVACY_POLICY_URL)
+
+    private fun openUrl(url: String) {
         try {
-            ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL)))
+            ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
         } catch (e: Exception) {
-            ctx.toast("브라우저를 열 수 없어요. $PRIVACY_POLICY_URL")
+            ctx.toast("브라우저를 열 수 없어요. $url")
         }
     }
 
@@ -307,7 +315,22 @@ class SettingsPage(host: MainActivity) : Page(host) {
 
     // ------------------------------------------------------------------ 백업
 
+    /** 내보내기 전에 파일에 담기는 내용과 주의점을 알려줌 */
     private fun exportBackup() {
+        AlertDialog.Builder(ctx)
+            .setTitle("백업 파일 내보내기")
+            .setMessage(
+                "백업 파일에는 알람 설정, 휴무일 메모, 날짜별 운동 기록이 암호화 없이 그대로 담겨요.\n\n" +
+                    "• 내 기기나 내 클라우드처럼 나만 볼 수 있는 곳에 저장하세요\n" +
+                    "• 다른 사람에게 보내거나 공개된 곳에 올리지 마세요\n" +
+                    "• 필요 없어진 백업 파일은 지워 주세요"
+            )
+            .setNegativeButton("취소", null)
+            .setPositiveButton("저장 위치 고르기") { _, _ -> launchExport() }
+            .show()
+    }
+
+    private fun launchExport() {
         val name = "fitalarm-backup-${LocalDate.now()}.json"
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)

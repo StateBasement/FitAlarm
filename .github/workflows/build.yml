@@ -2,7 +2,7 @@
 # 코드를 push 하거나, Actions 탭에서 "Run workflow" 를 누르면 실행됩니다.
 #
 # 산출물
-#  - Releases: FitAlarm.apk (테스트용, 디버그 키 서명 → 폰에 바로 설치)
+#  - Releases: FitAlarm.apk (테스트용 QA 빌드: 출시와 같이 난독화, 테스트 키 서명 → 폰에 바로 설치)
 #  - 이 실행의 Artifacts: FitAlarm-playstore-aab (출시용, 업로드 키 서명 → Play Console 에 업로드)
 #    업로드 키는 저장소 Secrets(UPLOAD_KEYSTORE_BASE64 등)에 등록되어 있을 때만 만들어집니다.
 name: Build APK
@@ -64,7 +64,7 @@ jobs:
             export FITALARM_UPLOAD_KEY_ALIAS=androiddebugkey
             export FITALARM_UPLOAD_KEY_PASSWORD=android
           fi
-          ./gradlew --no-daemon --stacktrace test assembleDebug bundleRelease 2>&1 | tee build.log
+          ./gradlew --no-daemon --stacktrace test assembleDebug assembleQa bundleRelease 2>&1 | tee build.log
 
       - name: Verify AAB signature
         run: |
@@ -93,19 +93,27 @@ jobs:
           echo "::error title=Gradle build failed::${msg}"
 
       - name: Prepare APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk FitAlarm.apk
+        run: |
+          cp app/build/outputs/apk/qa/app-qa.apk FitAlarm.apk
+          cp app/build/outputs/apk/debug/app-debug.apk FitAlarm-debug.apk
+          QA=$(du -h FitAlarm.apk | cut -f1); DBG=$(du -h FitAlarm-debug.apk | cut -f1)
+          echo "::notice title=APK sizes::QA(release-like, R8) ${QA} · debug ${DBG}"
 
       - uses: actions/upload-artifact@v4
         with:
           name: FitAlarm-apk
-          path: FitAlarm.apk
+          path: |
+            FitAlarm.apk
+            FitAlarm-debug.apk
 
       - name: Upload Play Store AAB (artifact only, not public release)
         if: env.HAS_UPLOAD_KEY == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: FitAlarm-playstore-aab
-          path: FitAlarm-*-playstore.aab
+          path: |
+            FitAlarm-*-playstore.aab
+            app/build/outputs/mapping/release/mapping.txt
           retention-days: 30
 
       - name: Publish test APK to Releases
@@ -113,5 +121,5 @@ jobs:
         with:
           tag_name: build-${{ github.run_number }}
           name: 운동 알람 빌드 ${{ github.run_number }}
-          body: 테스트용 APK 입니다. 폰에서 FitAlarm.apk 를 내려받아 설치하세요. (Play 스토어 업로드용 AAB 는 이 빌드의 Actions 실행 페이지 Artifacts 에 있습니다)
+          body: 테스트용 APK 입니다 (출시 버전과 같은 난독화 설정, 테스트 키 서명). 폰에서 FitAlarm.apk 를 내려받아 설치하세요. Play 스토어 업로드용 AAB 는 이 빌드의 Actions 실행 페이지 Artifacts 에 있습니다.
           files: FitAlarm.apk

@@ -26,6 +26,10 @@
 
     <application
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -43,6 +47,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 첫 실행: 운동 안전 안내와 이용약관 동의 -->
+        <activity
+            android:name=".ui.OnboardingActivity"
+            android:exported="false" />
 
         <activity
             android:name=".ui.AlarmEditActivity"

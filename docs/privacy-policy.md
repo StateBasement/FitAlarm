@@ -17,9 +17,9 @@ Dev_light(이하 "개발자")은 안드로이드 앱 「운동 알람」(이하 
 |---|---|---|
 | 카메라 영상 | 운동 미션 중 화면에 비친 사람의 관절 위치(좌표)를 실시간으로 계산해 운동 횟수를 셉니다. 영상과 사진은 저장하거나 전송하지 않으며, 계산이 끝난 프레임은 즉시 버려집니다. | 저장하지 않음 |
 | 달력(캘린더) | 이용자가 허용한 경우, 폰 달력 중 **공휴일 달력**의 일정 제목과 날짜만 읽어 쉬는 날을 판단합니다. 개인 일정이 들어 있는 달력은 읽지 않습니다. | 공휴일 날짜·이름만 앱 내부 저장소에 저장 |
-| 알람 설정, 내 휴무일, 운동 기록, 개인 보정 값 | 알람 시각·반복·알람음 설정, 등록한 휴무일, 날짜별 운동 횟수와 연속 기록, 동작 인식 기준값을 저장합니다. | 앱 내부 저장소, 앱 삭제 또는 앱 데이터 삭제 시 함께 삭제 |
+| 알람 설정, 내 휴무일, 운동 기록, 개인 보정 값 | 알람 시각·반복·알람음 설정, 등록한 휴무일, 날짜별 운동 횟수와 연속 기록, 동작 인식 기준값을 저장합니다. | 앱 내부 저장소, 앱 삭제 또는 앱 데이터 삭제 시 함께 삭제. 구글 클라우드 백업에는 올리지 않으며, 이용자가 새 휴대폰으로 직접 옮길 때(기기 간 이전)만 함께 옮겨짐 |
 | 알람음으로 고른 음악 파일 | 이용자가 시스템 파일 선택 화면에서 직접 고른 파일 하나에 대해서만 재생 권한을 받습니다. | 파일 위치(주소)만 저장 |
-| 백업 파일 | 이용자가 "백업 내보내기"를 누르면 위 설정과 기록을 이용자가 고른 위치에 파일로 저장합니다. | 이용자가 지정한 위치 |
+| 백업 파일 | 이용자가 "백업 내보내기"를 누르면 위 설정과 기록을 이용자가 고른 위치에 파일로 저장합니다. 이 파일은 암호화되지 않으므로 이용자가 안전하게 보관해야 합니다. | 이용자가 지정한 위치 |
 | 음성 안내 | 알람 시 날짜·시각·운동 이름을 폰에 설치된 음성 엔진(삼성·구글 등)으로 읽습니다. 앱은 읽을 문장만 엔진에 전달합니다. | 저장하지 않음 |
 
 ## 3. 앱이 인터넷에 접속하는 경우
@@ -74,7 +74,7 @@ Dev_light(이하 "개발자")은 안드로이드 앱 「운동 알람」(이하 
 
 ## 10. 안전성 확보 조치
 
-앱의 데이터는 다른 앱이 접근할 수 없는 앱 전용 저장 공간에 저장됩니다. 인터넷 통신은 HTTPS로 암호화됩니다.
+앱의 데이터는 다른 앱이 접근할 수 없는 앱 전용 저장 공간에 저장되고, 구글 클라우드 백업에서 제외됩니다. 앱의 모든 인터넷 통신은 HTTPS로 암호화되며 암호화되지 않은 통신은 차단됩니다. 출시용 앱은 코드 난독화를 적용하고, 배포에 쓰는 서명 키는 저장소와 분리해 보관합니다.
 
 ## 11. 개인정보 보호책임자 및 문의
 
@@ -96,7 +96,7 @@ Effective date: October 29, 2026
 - FitAlarm has no accounts and the developer runs no servers. **The developer does not collect or store your personal data.**
 - Camera frames are processed **on your device only** to count exercise repetitions; images are never stored or transmitted.
 - If you allow calendar access, the app reads only **holiday calendars** on your device; personal calendars are not read.
-- Alarms, days off, workout records and calibration values are stored only in the app's private storage and are deleted when you uninstall the app or clear its data.
+- Alarms, days off, workout records and calibration values are stored only in the app's private storage, are excluded from Google cloud backup (moved only during a direct device-to-device transfer you start), and are deleted when you uninstall the app or clear its data.
 - Once a day the app downloads Google's public "Holidays in South Korea" calendar to pick up newly designated holidays. No personal data is sent (your IP address is visible to Google as with any internet request). You can turn this off in Settings.
 - The app uses **Google ML Kit** for on-device pose detection. According to Google's ML Kit data disclosure, ML Kit sends device information (manufacturer, model, OS version, available ML accelerators), app information (package name, app version), a per-installation identifier that does not uniquely identify a user or physical device, performance metrics, API configuration, feature version, event types and error codes to Google over HTTPS, for diagnostics and usage analytics. It does not include camera images. See Google's [ML Kit data disclosure](https://developers.google.com/ml-kit/android-data-disclosure) and [Privacy Policy](https://policies.google.com/privacy).
 - No advertising or other analytics SDKs are used. The app is not directed at children under 14.

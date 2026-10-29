@@ -43,6 +43,12 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 처음 실행(또는 약관이 바뀐 뒤)에는 안전 안내·이용약관 동의 화면부터
+        if (!OnboardingActivity.isAccepted(this)) {
+            startActivity(Intent(this, OnboardingActivity::class.java))
+            finish()
+            return
+        }
         Palette.apply(this)
         setupEdgeToEdge()
         Notifications.ensureChannels(this)

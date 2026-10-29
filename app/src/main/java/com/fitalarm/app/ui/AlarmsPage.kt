@@ -37,7 +37,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /** 알람 탭: 다음 알람, 권한 안내, 알람 목록 */
-class AlarmsPage(host: MainActivity) : Page(host) {
+class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM) {
     private val ctx = host
     private lateinit var streakChip: TextView
     private lateinit var heroDay: TextView
@@ -45,12 +45,14 @@ class AlarmsPage(host: MainActivity) : Page(host) {
     private lateinit var heroSub: TextView
     private lateinit var bannerContainer: LinearLayout
     private lateinit var listContainer: LinearLayout
-    private lateinit var adSlot: AdSlotView
+    private lateinit var frame: FrameLayout
+    private lateinit var fab: FrameLayout
+    private var fabHidden = false
 
     override val root: View = build()
 
     private fun build(): View = with(ctx) {
-        val frame = FrameLayout(this)
+        frame = FrameLayout(this)
         val content = vbox { setPadding(dp(20), dp(20), dp(20), dp(110)) }
 
         val header = hbox {
@@ -91,18 +93,20 @@ class AlarmsPage(host: MainActivity) : Page(host) {
         content.addView(bannerContainer, lp())
         listContainer = vbox()
         content.addView(listContainer, lp())
-        // 광고 자리: 알람 목록 맨 아래 (광고를 켜기 전에는 보이지 않음)
-        adSlot = AdSlotView(this, AdPlacement.ALARM_LIST_BOTTOM)
-        content.addView(adSlot, lp().margins(t = dp(4)))
+        // 광고 자리: 알람 목록 맨 아래, 알람 카드와 간격을 둠 (광고가 없으면 보이지 않음)
+        content.addView(adSlot, lp().margins(t = dp(16)))
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             clipToPadding = false
             addView(content)
+            // 스크롤 중 광고가 + 버튼 밑으로 지나가면 버튼을 잠시 숨김 (광고를 가리지 않도록, AdMob 정책)
+            setOnScrollChangeListener { _, _, _, _, _ -> updateFabForAd() }
         }
         frame.addView(scroll, FrameLayout.LayoutParams(MATCH, MATCH))
+        frame.viewTreeObserver.addOnGlobalLayoutListener { updateFabForAd() }
 
-        val fab = FrameLayout(this).apply {
+        fab = FrameLayout(this).apply {
             background = ripple(oval(Palette.ACCENT), oval(android.graphics.Color.WHITE))
             elevation = dpf(6)
             contentDescription = "알람 추가"
@@ -133,6 +137,33 @@ class AlarmsPage(host: MainActivity) : Page(host) {
     }
 
     private fun dp(v: Number) = ctx.dp(v)
+
+    /** 광고와 + 버튼이 화면에서 겹치면 버튼을 숨기고, 겹치지 않으면 다시 보여줌 */
+    private fun updateFabForAd() {
+        val hide = adSlot.visibility == View.VISIBLE && adSlot.height > 0 && adOverlapsFab()
+        if (hide == fabHidden) return
+        fabHidden = hide
+        fab.animate().cancel()
+        if (hide) {
+            fab.animate().alpha(0f).translationY(dp(24).toFloat()).setDuration(150)
+                .withEndAction { if (fabHidden) fab.visibility = View.INVISIBLE }.start()
+        } else {
+            fab.visibility = View.VISIBLE
+            fab.animate().alpha(1f).translationY(0f).setDuration(150).start()
+        }
+    }
+
+    private fun adOverlapsFab(): Boolean {
+        val ad = IntArray(2).also { adSlot.getLocationInWindow(it) }
+        val f = IntArray(2).also { frame.getLocationInWindow(it) }
+        val gap = dp(8)
+        // 버튼의 원래 자리 (숨김 애니메이션으로 옮겨진 위치가 아니라 배치된 위치)
+        val fabTop = f[1] + fab.top - gap
+        val fabBottom = f[1] + fab.bottom + gap
+        val adTop = ad[1]
+        val adBottom = ad[1] + adSlot.height
+        return adBottom > fabTop && adTop < fabBottom
+    }
 
     fun updateNextAlarm() {
         val now = ZonedDateTime.now()

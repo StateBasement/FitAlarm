@@ -18,12 +18,11 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /** 기록 탭: 연속 성공, 월간 달력, 운동량 */
-class RecordsPage(host: MainActivity) : Page(host) {
+class RecordsPage(host: MainActivity) : Page(host, AdPlacement.RECORDS_BOTTOM) {
     private val ctx = host
     private var month: YearMonth = YearMonth.now()
     private lateinit var monthTitle: TextView
     private lateinit var body: LinearLayout
-    private val adSlot = AdSlotView(host, AdPlacement.RECORDS_BOTTOM)
 
     override val root: View = build()
 
@@ -148,8 +147,8 @@ class RecordsPage(host: MainActivity) : Page(host) {
             }
             body.addView(reps, lp().margins(t = dp(12)))
 
-            // 광고 자리: 기록 화면 맨 아래 (광고를 켜기 전에는 보이지 않음)
-            body.addView(adSlot, lp().margins(t = dp(12)))
+            // 광고 자리: 기록 화면 맨 아래 (광고가 없으면 보이지 않음)
+            body.addView(adSlot, lp().margins(t = dp(16)))
             adSlot.refresh()
         }
     }

@@ -24,6 +24,7 @@ import com.fitalarm.app.data.CalibrationRepository
 import com.fitalarm.app.data.HolidayRepository
 import com.fitalarm.app.data.SettingsRepository
 import com.fitalarm.app.holiday.HolidaySync
+import com.fitalarm.app.monetize.AdMob
 import com.fitalarm.app.monetize.AdPlacement
 import com.fitalarm.app.monetize.Monetization
 import com.fitalarm.app.voice.Speaker
@@ -34,11 +35,10 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 /** 설정 탭: 운동, 음성, 공휴일, 백업, 위젯 */
-class SettingsPage(host: MainActivity) : Page(host) {
+class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM) {
     private val ctx = host
     private lateinit var body: LinearLayout
     private var preview: Speaker? = null
-    private val adSlot = AdSlotView(host, AdPlacement.SETTINGS_BOTTOM)
     private var versionTaps = 0
     private var versionTapAt = 0L
 
@@ -176,12 +176,10 @@ class SettingsPage(host: MainActivity) : Page(host) {
                 addView(pillButton("홈 화면에 위젯 추가", filled = true, heightDp = 46) { pinWidget() }, lp().margins(b = dp(8)))
             }, lp().margins(t = dp(12)))
 
-            // ------------------------------------------------ 응원(후원) · 광고 자리 (켜기 전에는 보이지 않음)
+            // ------------------------------------------------ 응원(후원) (켜기 전에는 보이지 않음)
             if (Monetization.supportVisible(this)) {
                 body.addView(host.supportCard { host.refreshCurrent() }, lp().margins(t = dp(12)))
             }
-            body.addView(adSlot, lp().margins(t = dp(12)))
-            adSlot.refresh()
 
             // ------------------------------------------------ 정보
             val version = try {
@@ -199,6 +197,12 @@ class SettingsPage(host: MainActivity) : Page(host) {
                 val (termsRow, termsValue) = valueRow("이용약관", "운동 안전과 알람의 한계 안내 포함") { openUrl(OnboardingActivity.TERMS_URL) }
                 termsValue.text = "보기"
                 addView(termsRow)
+                // 유럽 등 동의가 필요한 지역에서만 보임 (Google 동의 관리 요건)
+                if (AdMob.privacyOptionsRequired(host)) {
+                    val (adRow, adValue) = valueRow("광고 개인정보 설정", "맞춤 광고 동의를 바꿀 수 있어요") { AdMob.showPrivacyOptions(host) }
+                    adValue.text = "열기"
+                    addView(adRow)
+                }
                 val (versionRow, versionValue) = valueRow("버전") { onVersionTapped() }
                 versionValue.text = version ?: ""
                 versionValue.setTextColor(Palette.TEXT_DIM)
@@ -208,6 +212,10 @@ class SettingsPage(host: MainActivity) : Page(host) {
             if (Monetization.isPreview(this)) {
                 body.addView(host.monetizePreviewCard { host.refreshCurrent() }, lp().margins(t = dp(12)))
             }
+
+            // ------------------------------------------------ 광고 자리: 설정 화면 맨 아래, 버튼이 있는 카드와 간격을 둠
+            body.addView(adSlot, lp().margins(t = dp(20)))
+            adSlot.refresh()
         }
     }
 

@@ -23,6 +23,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- 폰 기본 달력의 공휴일 달력 읽기 (사용자가 허용할 때만) -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- 광고(AdMob): 광고 ID. 사용자는 휴대폰 설정에서 광고 ID 를 재설정·삭제할 수 있음 -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
     <application
         android:allowBackup="true"
@@ -37,6 +39,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FitAlarm"
         tools:targetApi="33">
+
+        <!-- AdMob 앱 ID (공개 값). 광고 동의(UMP) SDK 가 여기서 읽고, 광고 SDK 는 코드(AdMobIds)에서 받음 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9101880128165365~5622811936" />
 
         <activity
             android:name=".ui.MainActivity"

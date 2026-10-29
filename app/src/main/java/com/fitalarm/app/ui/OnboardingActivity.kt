@@ -58,6 +58,7 @@ class OnboardingActivity : Activity() {
             listOf(
                 "회원가입이 없고, 카메라 영상과 운동 기록은 이 기기 안에서만 처리돼요.",
                 "개발자는 개인정보를 수집하지 않아요. 동작 인식 기능(Google ML Kit)이 기기 정보 등 진단 정보를 Google로 보내요.",
+                "무료 앱이라 기본 화면 아래에 Google 광고가 나와요. 광고를 위해 광고 ID·IP 주소 등이 Google로 전송되고, 광고 ID는 휴대폰 설정에서 삭제하거나 바꿀 수 있어요.",
             ),
         ), lp().margins(t = dp(12)))
 
@@ -116,7 +117,8 @@ class OnboardingActivity : Activity() {
 
     companion object {
         /** 약관을 크게 바꾸면 올려서 다시 동의를 받음 */
-        const val TERMS_VERSION = 1
+        /** 2: 광고(제9조)와 광고 관련 개인정보 안내 추가 */
+        const val TERMS_VERSION = 2
         const val TERMS_URL = "https://github.com/StateBasement/FitAlarm/blob/main/docs/terms-of-service.md"
         private const val KEY_TERMS_VERSION = "terms_version"
         private const val KEY_TERMS_AT = "terms_accepted_at"

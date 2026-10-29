@@ -32,8 +32,9 @@ import com.fitalarm.app.monetize.SupportProduct
 import java.time.LocalDate
 
 /**
- * 광고가 들어갈 자리. 광고가 꺼져 있거나 후원자이면 자리 자체가 사라져(GONE) 화면에 빈칸이 생기지 않습니다.
- * 페이지마다 한 개를 계속 재사용해야 실제 광고 SDK 를 붙였을 때 광고 뷰가 새지 않습니다.
+ * 광고가 들어갈 자리. 광고가 없거나(꺼짐·후원자·채울 광고 없음) 아직 오지 않았으면 자리 자체가 사라져(GONE) 빈칸이 생기지 않습니다.
+ * 탭마다 한 개를 계속 재사용하고, 이미 붙은 광고는 화면을 새로 그려도 다시 요청하지 않습니다
+ * (광고 교체 주기는 AdMob 설정을 따름).
  */
 class AdSlotView(context: Context, private val placement: AdPlacement) : FrameLayout(context) {
     private var attached: AdProvider? = null
@@ -43,12 +44,17 @@ class AdSlotView(context: Context, private val placement: AdPlacement) : FrameLa
     }
 
     fun refresh() {
+        val provider = Monetization.adProvider(context)
+        if (provider === attached) return
+        release()
+        if (provider.attachBanner(this, placement)) attached = provider
+    }
+
+    /** 광고 뷰를 정리 (화면을 닫을 때, 후원자가 됐을 때) */
+    fun release() {
         attached?.detach(this)
         attached = null
-        val provider = Monetization.adProvider(context)
-        val shown = provider.attachBanner(this, placement)
-        if (shown) attached = provider
-        visibility = if (shown) View.VISIBLE else View.GONE
+        visibility = View.GONE
     }
 }
 

@@ -17,22 +17,20 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /**
- * 광고·후원(응원) 기능의 스위치. 지금은 둘 다 꺼져 있어 사용자에게 아무것도 보이지 않습니다.
- *
- * 켜는 순서는 docs/monetization.md 참고:
- *  - 광고: AdMob 계정·광고 단위 만들기 → AdMob SDK 추가 → AdProvider 구현 연결 → ADS_ENABLED = true
- *  - 후원: Play Console 에 인앱 상품 만들기 → Play 결제 라이브러리 추가 → SupportStore 구현 연결 → SUPPORT_ENABLED = true
+ * 광고·후원(응원) 기능의 스위치. 자세한 내용은 docs/monetization.md 참고.
+ *  - 광고: 켜짐 (AdMob 배너 3곳, AdMob.kt). 출시 빌드만 실제 광고, 테스트 빌드는 테스트 광고
+ *  - 후원: 꺼짐. Play Console 에 인앱 상품 만들기 → Play 결제 라이브러리 추가 → SupportStore 구현 연결 → SUPPORT_ENABLED = true
  *
  * 개발자용 미리보기: 설정 > 정보 > "버전"을 7번 누르면 광고 자리(점선 상자)와 응원 카드·팝업이 보입니다.
  */
 object MonetizationConfig {
-    const val ADS_ENABLED = false
+    const val ADS_ENABLED = true
     const val SUPPORT_ENABLED = false
 }
 
 /**
- * 광고가 들어갈 수 있는 자리. Google Play 광고 정책상 잠금 화면 위에 뜨는 화면
- * (알람 울림, 운동 미션, 보너스 팝업)에는 광고를 넣지 않고, 누르는 버튼 바로 옆도 피했습니다.
+ * 광고가 들어갈 수 있는 자리 (각각 AdMob 광고 단위 하나, AdMobIds). Google Play 광고 정책상 잠금 화면 위에 뜨는 화면
+ * (알람 울림, 운동 미션, 보너스 팝업)에는 광고를 넣지 않고, 누르는 버튼과 떨어진 각 탭의 맨 아래에만 둡니다.
  */
 enum class AdPlacement(val title: String) {
     ALARM_LIST_BOTTOM("알람 목록 아래"),
@@ -40,14 +38,17 @@ enum class AdPlacement(val title: String) {
     SETTINGS_BOTTOM("설정 화면 아래"),
 }
 
-/** 광고 SDK 연결 지점. AdMob 등을 붙일 때 이 인터페이스를 구현합니다 */
+/** 광고 SDK 연결 지점 (AdMobProvider) */
 interface AdProvider {
-    /** container 에 배너를 넣었으면 true, 넣을 광고가 없으면 false (자리를 숨김) */
+    /**
+     * container 에 배너를 넣었으면 true, 지금 넣을 수 없으면 false.
+     * 자리를 보여줄지(container.visibility)는 구현이 정함: 광고가 실제로 도착했을 때만 VISIBLE.
+     */
     fun attachBanner(container: FrameLayout, placement: AdPlacement): Boolean
     fun detach(container: FrameLayout) = container.removeAllViews()
 }
 
-/** 광고 없음 (현재 기본값) */
+/** 광고 없음 (후원자, 광고 꺼짐) */
 object NoAdProvider : AdProvider {
     override fun attachBanner(container: FrameLayout, placement: AdPlacement): Boolean = false
 }
@@ -58,7 +59,7 @@ object PreviewAdProvider : AdProvider {
         val ctx = container.context
         val d = ctx.resources.displayMetrics.density
         val box = TextView(ctx).apply {
-            text = "광고 자리 · ${placement.title} · 배너 320×50"
+            text = "광고 자리 · ${placement.title} · 적응형 배너"
             textSize = 12f
             setTextColor(0xFF8A8F98.toInt())
             gravity = Gravity.CENTER
@@ -71,6 +72,7 @@ object PreviewAdProvider : AdProvider {
         }
         container.addView(box, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (56 * d).toInt()))
         container.setBackgroundColor(Color.TRANSPARENT)
+        container.visibility = android.view.View.VISIBLE
         return true
     }
 }
@@ -125,9 +127,9 @@ object Monetization {
     @Volatile
     var realStore: SupportStore = DisabledSupportStore
 
-    /** 실제 광고 SDK 를 연결하면 여기에 구현체를 넣음 (예: AdMobProvider) */
+    /** 실제 광고 SDK */
     @Volatile
-    var realAds: AdProvider = NoAdProvider
+    var realAds: AdProvider = AdMobProvider
 
     private fun prefs(ctx: Context): SharedPreferences =
         ctx.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

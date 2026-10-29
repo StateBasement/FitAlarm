@@ -77,6 +77,24 @@ jobs:
           echo "::notice title=${TITLE}::signed OK · version ${VER} · ${SIZE} · cert ${FP}"
           cp "$AAB" "FitAlarm-${VER}-playstore.aab"
 
+      - name: Verify ad units (Play AAB = real ads, test APK = Google test ads only)
+        run: |
+          rm -rf adcheck && mkdir -p adcheck/aab adcheck/qa
+          unzip -q -o app/build/outputs/bundle/release/app-release.aab 'base/dex/*' -d adcheck/aab
+          unzip -q -o app/build/outputs/apk/qa/app-qa.apk 'classes*.dex' -d adcheck/qa
+          REL=$(cat adcheck/aab/base/dex/*.dex | grep -aoE 'ca-app-pub-[0-9]+/[0-9]+' | sort -u | tr '\n' ' ')
+          QA=$(cat adcheck/qa/*.dex | grep -aoE 'ca-app-pub-[0-9]+/[0-9]+' | sort -u | tr '\n' ' ')
+          echo "::notice title=Ad units::Play AAB: ${REL} / test APK: ${QA}"
+          if echo "$QA" | grep -q 'pub-9101880128165365/'; then
+            echo "::error title=Real ad unit in test APK::테스트용 APK 에 실제 광고 단위가 들어 있습니다 (ADS_TEST_MODE 확인)"; exit 1
+          fi
+          for id in 8573116741 1923947916 5755381718; do
+            echo "$REL" | grep -q "pub-9101880128165365/$id" || { echo "::error title=Ad unit missing in AAB::출시 AAB 에 광고 단위 $id 가 없습니다"; exit 1; }
+          done
+          if echo "$REL" | grep -q '3940256099942544/'; then
+            echo "::error title=Test ad unit in AAB::출시 AAB 에 테스트 광고 단위가 들어 있습니다"; exit 1
+          fi
+
       - name: Report holiday feed check
         if: always()
         run: |

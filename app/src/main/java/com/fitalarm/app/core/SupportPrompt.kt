@@ -45,14 +45,14 @@ object SupportPromptRule {
             return SupportMilestone(
                 key = "streak$streakHit",
                 headline = "${streakHit}일 연속 성공!",
-                message = "꾸준히 해내고 있어요. 운동 알람이 아침에 도움이 되고 있다면 응원해 주세요.",
+                message = "꾸준히 해내고 있어요. 피타람이 아침에 도움이 되고 있다면 응원해 주세요.",
             )
         }
         if (successDays >= TOTAL_MILESTONE && "total$TOTAL_MILESTONE" !in state.shownMilestones) {
             return SupportMilestone(
                 key = "total$TOTAL_MILESTONE",
                 headline = "벌써 ${successDays}번의 아침 운동!",
-                message = "운동 알람이 마음에 드셨다면 커피 한 잔으로 응원해 주세요. 더 좋은 기능을 만드는 데 쓸게요.",
+                message = "피타람이 마음에 드셨다면 커피 한 잔으로 응원해 주세요. 더 좋은 기능을 만드는 데 쓸게요.",
             )
         }
         return null

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 휴대폰 언어가 영어일 때 홈 화면에 보이는 이름 (앱 안 화면은 한국어) -->
+    <string name="app_name">FitAlarm</string>
+</resources>

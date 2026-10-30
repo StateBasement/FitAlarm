@@ -73,7 +73,7 @@
             android:exported="false"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
-            android:taskAffinity="com.fitalarm.app.ring"
+            android:taskAffinity="${applicationId}.ring"
             android:theme="@style/Theme.FitAlarm.Ring"
             tools:ignore="DiscouragedApi,LockedOrientationActivity" />
 

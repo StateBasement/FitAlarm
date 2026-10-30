@@ -11,15 +11,17 @@ val uploadKeystore: String? = System.getenv("FITALARM_UPLOAD_KEYSTORE")
 val hasUploadKey = !uploadKeystore.isNullOrBlank() && file(uploadKeystore!!).exists()
 
 android {
+    // 코드 안의 패키지 이름(사용자에게 보이지 않음). 스토어·기기에서 앱을 구분하는 이름은 아래 applicationId
     namespace = "com.fitalarm.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.fitalarm.app"
+        // Play 스토어 패키지 이름: 첫 업로드 후에는 영원히 바꿀 수 없음
+        applicationId = "com.fitness_alarm.app"
         minSdk = 26          // Android 8.0 이상
         targetSdk = 36       // Google Play: 2026-08-31 부터 신규 앱·업데이트는 Android 16(API 36) 이상
-        versionCode = 7
-        versionName = "2.4.1"
+        versionCode = 8
+        versionName = "2.4.2"
         // 광고: 기본은 Google 테스트 광고. 출시(release) 빌드만 실제 광고 단위를 씀 (AdMobIds)
         buildConfigField("boolean", "ADS_TEST_MODE", "true")
     }

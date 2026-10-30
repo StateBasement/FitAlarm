@@ -401,7 +401,7 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
         if (manager != null && manager.isRequestPinAppWidgetSupported) {
             manager.requestPinAppWidget(ComponentName(ctx, AlarmWidget::class.java), null, null)
         } else {
-            ctx.toast("홈 화면을 길게 누르고 위젯 > 운동 알람을 선택하세요")
+            ctx.toast("홈 화면을 길게 누르고 위젯 > 피타람을 선택하세요")
         }
     }
 

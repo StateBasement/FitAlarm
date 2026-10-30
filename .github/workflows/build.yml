@@ -138,6 +138,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: 피타람 빌드 ${{ github.run_number }}
+          name: 알람핏 빌드 ${{ github.run_number }}
           body: 테스트용 APK 입니다 (출시 버전과 같은 난독화 설정, 테스트 키 서명). 폰에서 FitAlarm.apk 를 내려받아 설치하세요. Play 스토어 업로드용 AAB 는 이 빌드의 Actions 실행 페이지 Artifacts 에 있습니다.
           files: FitAlarm.apk

@@ -87,7 +87,7 @@ object SupportFlow {
         val adsNote = if (MonetizationConfig.ADS_ENABLED || Monetization.isPreview(activity)) "\n이제 광고가 보이지 않아요." else ""
         AlertDialog.Builder(activity)
             .setTitle("응원해 주셔서 감사해요!")
-            .setMessage("보내주신 응원으로 더 좋은 피타람을 만들게요.$adsNote" +
+            .setMessage("보내주신 응원으로 더 좋은 알람핏을 만들게요.$adsNote" +
                 if (Monetization.isPreview(activity)) "\n\n(미리보기라 실제 결제는 되지 않았어요)" else "")
             .setPositiveButton("확인", null)
             .show()
@@ -145,7 +145,7 @@ object SupportSheet {
             sheet.addView(View(this).apply { background = rounded(Palette.OUTLINE, dpf(3)) },
                 lp(dp(40), dp(5)).apply { gravity = Gravity.CENTER_HORIZONTAL })
             sheet.addView(label("개발자 응원하기 · 원할 때만", 13f, Palette.WARM, Fonts.BOLD), lp().margins(t = dp(14)))
-            sheet.addView(label(milestone?.headline ?: "피타람을 응원해 주세요", 23f, Palette.TEXT, Fonts.BOLD), lp().margins(t = dp(6)))
+            sheet.addView(label(milestone?.headline ?: "알람핏을 응원해 주세요", 23f, Palette.TEXT, Fonts.BOLD), lp().margins(t = dp(6)))
             sheet.addView(label(
                 milestone?.message ?: "광고 없이 꾸준히 만들 수 있도록 커피 한 잔으로 응원해 주세요.",
                 15f, Palette.TEXT_DIM,
@@ -235,7 +235,7 @@ fun MainActivity.supportCard(onChanged: () -> Unit): LinearLayout = card("개발
         supporter -> "응원해 주셔서 감사해요! 보내주신 응원으로 더 좋은 앱을 만들게요." +
             if (adsOn) " 광고는 보이지 않아요." else ""
         adsOn -> "광고 없이 꾸준히 만들 수 있도록 응원해 주세요. 응원하면 광고가 사라져요."
-        else -> "피타람이 도움이 됐다면 커피 한 잔으로 응원해 주세요."
+        else -> "알람핏이 도움이 됐다면 커피 한 잔으로 응원해 주세요."
     }
     addView(label(text, 13.5f, if (supporter) Palette.ACCENT else Palette.TEXT_DIM, if (supporter) Fonts.MEDIUM else null).apply {
         setLineSpacing(0f, 1.25f)
@@ -256,7 +256,7 @@ fun MainActivity.monetizePreviewCard(onChanged: () -> Unit): LinearLayout = card
         13f, Palette.TEXT_DIM,
     ).apply { setLineSpacing(0f, 1.25f) }, lp().margins(t = dp(2), b = dp(10)))
     addView(pillButton("응원 팝업 보기", filled = true, heightDp = 46) {
-        SupportSheet.show(this@monetizePreviewCard, SupportMilestone("preview", "7일 연속 성공!", "꾸준히 해내고 있어요. 피타람이 아침에 도움이 되고 있다면 응원해 주세요."), onChanged)
+        SupportSheet.show(this@monetizePreviewCard, SupportMilestone("preview", "7일 연속 성공!", "꾸준히 해내고 있어요. 알람핏이 아침에 도움이 되고 있다면 응원해 주세요."), onChanged)
     }, lp().margins(b = dp(8)))
     addView(hbox {
         addView(pillButton("후원 상태 초기화", filled = false, heightDp = 46) {

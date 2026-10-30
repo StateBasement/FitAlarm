@@ -39,7 +39,7 @@ object BackupManager {
         val text = ctx.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
             ?: throw IllegalStateException("파일을 열 수 없습니다")
         val root = JSONObject(text)
-        require(root.optString("app") == "fitalarm") { "피타람 백업 파일이 아닙니다" }
+        require(root.optString("app") == "fitalarm") { "알람핏 백업 파일이 아닙니다" }
         val summary = Summary(
             root.optJSONArray("alarms")?.length() ?: 0,
             root.optJSONArray("records")?.length() ?: 0,

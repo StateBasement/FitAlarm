@@ -1,4 +1,4 @@
-# 피타람 (FitAlarm)
+# 알람핏 (Alarm Fit)
 
 패키지 이름: `com.fitness_alarm.app`
 

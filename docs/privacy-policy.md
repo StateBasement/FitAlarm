@@ -1,8 +1,8 @@
-# 피타람 개인정보처리방침
+# 알람핏 개인정보처리방침
 
 시행일: 2026년 10월 29일
 
-Dev_light(이하 "개발자")은 안드로이드 앱 「피타람(FitAlarm)」(이하 "앱")을 제공하면서 「개인정보 보호법」 등 관련 법령을 지키고, 이용자의 개인정보가 어떻게 다뤄지는지 다음과 같이 알려드립니다.
+Dev_light(이하 "개발자")은 안드로이드 앱 「알람핏(Alarm Fit)」(이하 "앱")을 제공하면서 「개인정보 보호법」 등 관련 법령을 지키고, 이용자의 개인정보가 어떻게 다뤄지는지 다음과 같이 알려드립니다.
 
 ## 1. 요약
 
@@ -105,7 +105,7 @@ ML Kit는 위 정보를 서드 파티에 제공하지 않는다고 밝히고 있
 
 ## 8. 개인정보의 파기
 
-앱이 기기 안에 저장한 정보는 앱을 삭제하거나, 휴대폰 설정 > 애플리케이션 > 피타람 > 저장공간 > 데이터 삭제를 하면 즉시 모두 삭제됩니다. 이용자가 내보낸 백업 파일은 이용자가 직접 삭제할 수 있습니다. Google로 전송된 정보(4항)는 Google의 정책에 따라 보관·파기됩니다.
+앱이 기기 안에 저장한 정보는 앱을 삭제하거나, 휴대폰 설정 > 애플리케이션 > 알람핏 > 저장공간 > 데이터 삭제를 하면 즉시 모두 삭제됩니다. 이용자가 내보낸 백업 파일은 이용자가 직접 삭제할 수 있습니다. Google로 전송된 정보(4항)는 Google의 정책에 따라 보관·파기됩니다.
 
 ## 9. 이용자의 권리
 
@@ -132,11 +132,11 @@ ML Kit는 위 정보를 서드 파티에 제공하지 않는다고 밝히고 있
 
 ---
 
-# FitAlarm Privacy Policy (English summary)
+# Alarm Fit Privacy Policy (English summary)
 
 Effective date: October 29, 2026
 
-- FitAlarm has no accounts and the developer runs no servers. **The developer does not collect or store your personal data.** For ads, the developer only receives aggregated reports (such as impression and click counts) that do not identify you.
+- Alarm Fit has no accounts and the developer runs no servers. **The developer does not collect or store your personal data.** For ads, the developer only receives aggregated reports (such as impression and click counts) that do not identify you.
 - Camera frames are processed **on your device only** to count exercise repetitions; images are never stored or transmitted.
 - If you allow calendar access, the app reads only **holiday calendars** on your device; personal calendars are not read.
 - Alarms, days off, workout records and calibration values are stored only in the app's private storage, are excluded from Google cloud backup (moved only during a direct device-to-device transfer you start), and are deleted when you uninstall the app or clear its data.

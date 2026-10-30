@@ -20,8 +20,8 @@ android {
         applicationId = "com.fitness_alarm.app"
         minSdk = 26          // Android 8.0 이상
         targetSdk = 36       // Google Play: 2026-08-31 부터 신규 앱·업데이트는 Android 16(API 36) 이상
-        versionCode = 8
-        versionName = "2.4.2"
+        versionCode = 9
+        versionName = "2.4.3"
         // 광고: 기본은 Google 테스트 광고. 출시(release) 빌드만 실제 광고 단위를 씀 (AdMobIds)
         buildConfigField("boolean", "ADS_TEST_MODE", "true")
     }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 적응형 아이콘 전경: 알람 시계 + 아래쪽 덤벨 -->
+<!-- 적응형 아이콘 전경: 알람 시계(바늘 없음) 안에 스쿼트 하는 사람. 테마 아이콘(monochrome)에도 그대로 사용 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -8,32 +8,33 @@
     <!-- 종 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M30.5,40.5 A11,11 0 0,1 40.5,30.5 L30.5,40.5 Z" />
+        android:pathData="M39.15,33.96 A6.50,6.50 0 0,0 29.96,43.15 Z" />
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M77.5,40.5 A11,11 0 0,0 67.5,30.5 L77.5,40.5 Z" />
+        android:pathData="M78.04,43.15 A6.50,6.50 0 0,0 68.85,33.96 Z" />
     <!-- 시계 테두리 -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M35,53 A19,19 0 1,1 73,53 A19,19 0 1,1 35,53 Z"
-        android:strokeWidth="5"
+        android:pathData="M30.00,58.00 A24.00,24.00 0 1,1 78.00,58.00 A24.00,24.00 0 1,1 30.00,58.00 Z"
+        android:strokeWidth="5.0"
         android:strokeColor="#FFFFFF" />
-    <!-- 바늘 -->
+    <!-- 스쿼트: 몸통·허벅지·정강이·발 -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M54,43 L54,54 L61,58"
-        android:strokeWidth="4.5"
+        android:pathData="M51.62,51.96 L43.94,63.00 L56.42,61.08 L53.06,72.12 L57.86,72.12"
+        android:strokeWidth="4.8"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
-    <!-- 덤벨 -->
+    <!-- 앞으로 뻗은 팔 -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M42,80 L66,80"
-        android:strokeWidth="4"
+        android:pathData="M51.62,51.96 L65.06,51.96"
+        android:strokeWidth="4.8"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round" />
+    <!-- 머리 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M37,74 h5 v12 h-5 Z M66,74 h5 v12 h-5 Z" />
+        android:pathData="M50.85,46.20 A4.13,4.13 0 1,1 59.11,46.20 A4.13,4.13 0 1,1 50.85,46.20 Z" />
 </vector>

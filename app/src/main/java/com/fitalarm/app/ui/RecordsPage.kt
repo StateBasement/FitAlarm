@@ -126,6 +126,7 @@ class RecordsPage(host: MainActivity) : Page(host, AdPlacement.RECORDS_BOTTOM) {
             legend.addView(legendItem(oval(Palette.WARM), "보너스", 6))
             legend.addView(legendItem(oval(Palette.SKY_SOFT, Palette.ON_SKY, dp(1)), "공휴일"))
             legend.addView(legendItem(dashedRing(), "놓침"))
+            legend.addView(legendItem(oval(Palette.SURFACE_HI, Palette.OUTLINE, dp(1)), "건너뜀"))
             cal.addView(legend, lp().margins(t = dp(6), b = dp(6)))
             body.addView(cal, lp().margins(t = dp(12)))
 
@@ -174,6 +175,10 @@ class RecordsPage(host: MainActivity) : Page(host, AdPlacement.RECORDS_BOTTOM) {
                 circle.background = dashedRing()
                 circle.setTextColor(Palette.ON_WARM)
             }
+            result == DayResult.SKIPPED -> {
+                circle.background = oval(Palette.SURFACE_HI, Palette.OUTLINE, dp(1))
+                circle.setTextColor(Palette.TEXT_DIM)
+            }
             date == today -> {
                 circle.background = oval(android.graphics.Color.TRANSPARENT, Palette.ACCENT, dp(2))
                 circle.setTextColor(Palette.ACCENT)
@@ -199,7 +204,7 @@ class RecordsPage(host: MainActivity) : Page(host, AdPlacement.RECORDS_BOTTOM) {
         hbox {
             addView(View(this@with).apply { background = swatch }, lp(dp(sizeDp), dp(sizeDp)).margins(r = dp(4)))
             addView(label(text, 11.5f, Palette.TEXT_DIM))
-            setPadding(0, 0, dp(14), 0)
+            setPadding(0, 0, dp(10), 0)
         }
     }
 }

@@ -18,8 +18,8 @@ android {
         applicationId = "com.fitalarm.app"
         minSdk = 26          // Android 8.0 이상
         targetSdk = 36       // Google Play: 2026-08-31 부터 신규 앱·업데이트는 Android 16(API 36) 이상
-        versionCode = 6
-        versionName = "2.4.0"
+        versionCode = 7
+        versionName = "2.4.1"
         // 광고: 기본은 Google 테스트 광고. 출시(release) 빌드만 실제 광고 단위를 씀 (AdMobIds)
         buildConfigField("boolean", "ADS_TEST_MODE", "true")
     }

@@ -8,6 +8,7 @@ enum class RecordKind(val key: String) {
     MISSION("mission"),       // 운동 미션 완료로 알람 끔
     DISMISS("dismiss"),       // 미션 없는 알람을 끔 (또는 카메라 불가 대비책)
     MISSED("missed"),         // 끄지 않아 시간 초과로 종료
+    SKIP("skip"),             // 운동 미션 알람을 "운동 없이 끄기"로 끔
     BONUS("bonus"),           // 보너스 운동 완료
     BONUS_QUIT("bonus_quit"); // 보너스 운동 중간에 그만둠
 
@@ -25,13 +26,14 @@ data class RecordEntry(
     val atMillis: Long = 0L,
 )
 
-enum class DayResult { NONE, SUCCESS, MISSED }
+/** SKIPPED: 운동 없이 끈 날 (놓친 날처럼 연속 기록이 끊김) */
+enum class DayResult { NONE, SUCCESS, MISSED, SKIPPED }
 
 data class DayInfo(val result: DayResult, val bonus: Boolean)
 
 data class MonthSummary(
     val successes: Int,
-    val alarmDays: Int,             // 성공 + 놓친 날
+    val alarmDays: Int,             // 성공 + 놓친 날 + 운동 없이 끈 날
     val bonusSets: Int,
     val avgMissionMs: Long?,
     val missionReps: Map<ExerciseType, Int>,
@@ -40,15 +42,17 @@ data class MonthSummary(
 
 object RecordStats {
 
-    /** 날짜별 결과. 같은 날 성공과 놓침이 모두 있으면 성공으로 봄 */
+    /** 날짜별 결과. 같은 날 여러 알람이 있으면 성공 > 놓침 > 운동 없이 끔 순으로 봄 */
     fun days(entries: List<RecordEntry>): Map<LocalDate, DayInfo> {
         val out = HashMap<LocalDate, DayInfo>()
         for ((date, list) in entries.groupBy { it.date }) {
             val success = list.any { it.kind == RecordKind.MISSION || it.kind == RecordKind.DISMISS }
             val missed = list.any { it.kind == RecordKind.MISSED }
+            val skipped = list.any { it.kind == RecordKind.SKIP }
             val result = when {
                 success -> DayResult.SUCCESS
                 missed -> DayResult.MISSED
+                skipped -> DayResult.SKIPPED
                 else -> DayResult.NONE
             }
             out[date] = DayInfo(result, list.any { it.kind == RecordKind.BONUS })
@@ -57,7 +61,7 @@ object RecordStats {
     }
 
     /**
-     * 연속 성공 일수: 오늘부터 거꾸로 세며, 성공한 날 +1, 놓친 날에서 멈춤.
+     * 연속 성공 일수: 오늘부터 거꾸로 세며, 성공한 날 +1, 놓친 날·운동 없이 끈 날에서 멈춤.
      * 알람이 없던 날·공휴일(기록 없음)은 건너뛰어 연속 기록이 끊기지 않음. 오늘 아직 기록이 없어도 끊기지 않음.
      */
     fun currentStreak(entries: List<RecordEntry>, today: LocalDate): Int {
@@ -69,7 +73,7 @@ object RecordStats {
         while (!d.isBefore(earliest)) {
             when (map[d]?.result) {
                 DayResult.SUCCESS -> n++
-                DayResult.MISSED -> return n
+                DayResult.MISSED, DayResult.SKIPPED -> return n
                 else -> Unit
             }
             d = d.minusDays(1)
@@ -88,7 +92,7 @@ object RecordStats {
                     cur++
                     if (cur > best) best = cur
                 }
-                DayResult.MISSED -> cur = 0
+                DayResult.MISSED, DayResult.SKIPPED -> cur = 0
                 else -> Unit
             }
         }
@@ -100,11 +104,12 @@ object RecordStats {
         val map = days(inMonth)
         val successes = map.values.count { it.result == DayResult.SUCCESS }
         val missed = map.values.count { it.result == DayResult.MISSED }
+        val skipped = map.values.count { it.result == DayResult.SKIPPED }
         val missions = inMonth.filter { it.kind == RecordKind.MISSION && it.durationMs > 0 }
         val avg = if (missions.isEmpty()) null else missions.sumOf { it.durationMs } / missions.size
         return MonthSummary(
             successes = successes,
-            alarmDays = successes + missed,
+            alarmDays = successes + missed + skipped,
             bonusSets = inMonth.count { it.kind == RecordKind.BONUS },
             avgMissionMs = avg,
             missionReps = sumReps(inMonth.filter { it.kind == RecordKind.MISSION }),

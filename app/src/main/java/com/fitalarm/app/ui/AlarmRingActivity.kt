@@ -45,6 +45,8 @@ class AlarmRingActivity : Activity() {
     private lateinit var announceText: TextView
     private lateinit var primaryButton: TextView
     private lateinit var snoozeButton: TextView
+    private lateinit var skipButton: HoldButton
+    private lateinit var skipNote: TextView
 
     private val clockTick = object : Runnable {
         override fun run() {
@@ -208,7 +210,24 @@ class AlarmRingActivity : Activity() {
         }
         content.addView(snoozeButton, lp().margins(t = dp(12)))
 
-        root.addView(content, FrameLayout.LayoutParams(MATCH, MATCH))
+        // 운동 미션 알람을 운동 없이 끄기: 아프거나 무리하면 안 되는 날을 위해. 잠결에 실수로 꺼지지 않게 3초 누르기
+        skipButton = HoldButton(this, "운동 없이 끄기 · 3초 누르기", SKIP_HOLD_MS) { onSkip() }.apply {
+            fillColor = Palette.ACCENT_SOFT
+            strokeColor = Palette.OUTLINE
+        }
+        content.addView(skipButton, lp().margins(t = dp(12)))
+        skipNote = label("몸이 안 좋은 날은 쉬어 가세요. 연속 기록은 여기서 끊겨요", 12.5f, Palette.TEXT_DIM).apply {
+            gravity = Gravity.CENTER
+        }
+        content.addView(skipNote, lp().margins(t = dp(6)))
+
+        // 작은 화면·긴 루틴에서도 아래 버튼이 잘리지 않도록 스크롤 (공간이 남으면 버튼은 화면 아래에 붙음)
+        val scroll = android.widget.ScrollView(this).apply {
+            isFillViewport = true
+            isVerticalScrollBarEnabled = false
+            addView(content, FrameLayout.LayoutParams(MATCH, WRAP))
+        }
+        root.addView(scroll, FrameLayout.LayoutParams(MATCH, MATCH))
         root.applySystemBarPadding()
         return root
     }
@@ -254,9 +273,13 @@ class AlarmRingActivity : Activity() {
                 }, lp().margins(b = dp(8)))
             }
             primaryButton.text = "운동 미션 시작"
+            skipButton.visibility = View.VISIBLE
+            skipNote.visibility = View.VISIBLE
         } else {
             missionBox.visibility = View.GONE
             primaryButton.text = "알람 끄기"
+            skipButton.visibility = View.GONE
+            skipNote.visibility = View.GONE
         }
 
         if (a != null && a.canSnooze()) {
@@ -281,6 +304,12 @@ class AlarmRingActivity : Activity() {
 
     private fun onSnooze() {
         startService(AlarmService.actionIntent(this, AlarmService.ACTION_SNOOZE, alarmId))
+        finishAndRemoveTask()
+    }
+
+    private fun onSkip() {
+        startService(AlarmService.skipMissionIntent(this, alarmId))
+        toast("오늘은 운동 없이 알람을 껐어요")
         finishAndRemoveTask()
     }
 
@@ -309,6 +338,7 @@ class AlarmRingActivity : Activity() {
         const val EXTRA_START_SERVICE = "start_service"
         const val EXTRA_START_MISSION = "start_mission"
         private const val GRACE_MS = 5_000L
+        const val SKIP_HOLD_MS = 3_000L
         private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
     }
 }

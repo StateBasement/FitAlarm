@@ -137,6 +137,22 @@ class FeaturesTest {
     }
 
     @Test
+    fun skippedMissionBreaksStreakButCountsAsAlarmDay() {
+        val list = listOf(e(10, RecordKind.MISSION), e(11, RecordKind.MISSION), e(12, RecordKind.SKIP), e(13, RecordKind.MISSION))
+        val days = RecordStats.days(list)
+        assertEquals(DayResult.SKIPPED, days[LocalDate.of(2026, 10, 12)]!!.result)
+        assertEquals(1, RecordStats.currentStreak(list, LocalDate.of(2026, 10, 13)))
+        assertEquals(2, RecordStats.bestStreak(list))
+        val s = RecordStats.month(list, YearMonth.of(2026, 10))
+        assertEquals(3, s.successes)
+        assertEquals(4, s.alarmDays)
+        // 같은 날 다른 알람을 미션으로 끄면 그날은 성공
+        assertEquals(DayResult.SUCCESS, RecordStats.days(list + e(12, RecordKind.MISSION))[LocalDate.of(2026, 10, 12)]!!.result)
+        // 기록 저장 키
+        assertEquals(RecordKind.SKIP, RecordKind.fromKey("skip"))
+    }
+
+    @Test
     fun monthSummary() {
         val list = listOf(
             e(1, RecordKind.MISSION, mapOf(ExerciseType.SQUAT to 15), 120_000),

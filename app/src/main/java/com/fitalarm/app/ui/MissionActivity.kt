@@ -1,7 +1,6 @@
 package com.fitalarm.app.ui
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -89,7 +88,9 @@ class MissionActivity : Activity(), PoseCamera.Listener {
     private lateinit var hintText: TextView
     private lateinit var guideText: TextView
     private lateinit var voiceSwitch: Switch
-    private lateinit var fallbackButton: TextView
+    /** 알람 모드: 운동 없이 끄기(3초 누르기). 카메라를 못 쓰면 "카메라 없이 끄기"로 바뀜 */
+    private lateinit var fallbackButton: HoldButton
+    private var cameraUnavailable = false
     private lateinit var exitButton: TextView
     private lateinit var doneOverlay: LinearLayout
     private lateinit var doneTitle: TextView
@@ -101,7 +102,6 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         // 알람이 시간 초과·다시 알림 등으로 이미 끝났으면 미션 화면도 닫음
         if (mode == Mode.ALARM && !finished && RingState.ringingAlarmId != alarmId) finish()
     }
-    private val holdToDismiss = Runnable { completeAlarmMission(viaFallback = true) }
     private val bonusAutoClose = Runnable { closeBonusOffer() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -167,7 +167,6 @@ class MissionActivity : Activity(), PoseCamera.Listener {
 
     override fun onPause() {
         camera?.stop()
-        handler.removeCallbacks(holdToDismiss)
         if (::book.isInitialized) CalibrationRepository.save(this, book)
         if (mode == Mode.ALARM && ::session.isInitialized) {
             RingState.removeListener(ringListener)
@@ -204,7 +203,10 @@ class MissionActivity : Activity(), PoseCamera.Listener {
 
     override fun onCameraReady(uprightWidth: Int, uprightHeight: Int, mirrored: Boolean) {
         previewFrame.setAspect(uprightWidth, uprightHeight)
-        fallbackButton.visibility = View.GONE
+        if (cameraUnavailable) {
+            cameraUnavailable = false
+            fallbackButton.idleText = SKIP_TEXT
+        }
     }
 
     override fun onPose(frame: PoseFrame?, uprightWidth: Int, uprightHeight: Int, mirrored: Boolean) {
@@ -380,30 +382,13 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         finish()
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private fun buildFallbackButton(): TextView =
-        pillButton("카메라를 쓸 수 없어요 · 3초간 누르고 있으면 알람이 꺼져요", filled = false, heightDp = 52) {
-            toast("버튼을 3초간 누르고 있으세요")
+    private fun buildFallbackButton(): HoldButton =
+        HoldButton(this, SKIP_TEXT, HOLD_TO_DISMISS_MS) {
+            if (cameraUnavailable) completeAlarmMission(viaFallback = true) else skipAlarmMission()
         }.apply {
-            visibility = View.GONE
-            textSize = 14f
-            setTextColor(Palette.WARN)
-            setOnTouchListener { v, ev ->
-                when (ev.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        v.isPressed = true
-                        this@MissionActivity.handler.postDelayed(holdToDismiss, HOLD_TO_DISMISS_MS)
-                        true
-                    }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        v.isPressed = false
-                        this@MissionActivity.handler.removeCallbacks(holdToDismiss)
-                        if (ev.actionMasked == MotionEvent.ACTION_UP && !finished) v.performClick()
-                        true
-                    }
-                    else -> false
-                }
-            }
+            // 알람 모드에서만 보임 (연습·보너스에는 "그만하기" 버튼이 따로 있음)
+            visibility = if (mode == Mode.ALARM) View.VISIBLE else View.GONE
+            fillColor = Palette.WARM_SOFT
         }
 
     private fun render(u: MissionUpdate) {
@@ -463,8 +448,12 @@ class MissionActivity : Activity(), PoseCamera.Listener {
     private fun showCameraUnavailable(message: String) {
         hintText.text = message
         hintText.setTextColor(Palette.WARN)
-        // 알람 모드에서 카메라를 쓸 수 없으면 갇히지 않도록 길게 눌러 끄는 대비책 제공
-        if (mode == Mode.ALARM && !finished) fallbackButton.visibility = View.VISIBLE
+        // 알람 모드에서 카메라를 쓸 수 없으면 갇히지 않도록: 이때 끄면 연속 기록이 끊기지 않음
+        if (mode == Mode.ALARM && !finished) {
+            cameraUnavailable = true
+            fallbackButton.idleText = "카메라를 쓸 수 없어요 · 3초 누르면 꺼져요"
+            fallbackButton.visibility = View.VISIBLE
+        }
     }
 
     private fun showDone(title: String, sub: String, closeButton: Boolean) {
@@ -482,7 +471,6 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         if (finished) return
         finished = true
         camera?.stop()
-        handler.removeCallbacks(holdToDismiss)
         RingState.removeListener(ringListener)
 
         val elapsed = SystemClock.elapsedRealtime() - startedAt
@@ -513,6 +501,17 @@ class MissionActivity : Activity(), PoseCamera.Listener {
             showDone("미션 완료!", "좋은 아침이에요.", closeButton = false)
             showBonusOffer(plan)
         }
+    }
+
+    /** 운동 없이 끄기: 기록(건너뜀)은 알람 서비스가 남김 */
+    private fun skipAlarmMission() {
+        if (finished) return
+        finished = true
+        camera?.stop()
+        RingState.removeListener(ringListener)
+        startService(AlarmService.skipMissionIntent(this, alarmId))
+        showDone("알람 해제", "오늘은 운동 없이 껐어요.\n무리하지 말고 푹 쉬어요.", closeButton = false)
+        handler.postDelayed({ finish() }, DONE_SCREEN_MS)
     }
 
     private fun completePractice() {
@@ -649,7 +648,8 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         private const val REQ_CAMERA = 31
         private const val BANNER_MS = 2_500L
         private const val DONE_SCREEN_MS = 2_000L
-        private const val HOLD_TO_DISMISS_MS = 3_000L
+        private const val HOLD_TO_DISMISS_MS = AlarmRingActivity.SKIP_HOLD_MS
+        private const val SKIP_TEXT = "운동 없이 끄기 · 3초 누르기"
         private const val BONUS_AUTO_CLOSE_MS = 15_000L
     }
 }

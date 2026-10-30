@@ -76,7 +76,11 @@ class AlarmService : Service() {
         when (intent?.action) {
             ACTION_START -> handleStart(id)
             ACTION_SNOOZE -> handleSnooze(id)
-            ACTION_DISMISS -> handleDismiss(id, intent.getBooleanExtra(EXTRA_MISSION_DONE, false))
+            ACTION_DISMISS -> handleDismiss(
+                id,
+                missionDone = intent.getBooleanExtra(EXTRA_MISSION_DONE, false),
+                skipMission = intent.getBooleanExtra(EXTRA_SKIP_MISSION, false),
+            )
             ACTION_MISSION_STATE -> {
                 setMissionActive(intent.getBooleanExtra(EXTRA_MISSION_ACTIVE, false))
                 stopIfIdle()
@@ -161,7 +165,7 @@ class AlarmService : Service() {
         stopSelfCompletely()
     }
 
-    private fun handleDismiss(alarmId: Int, missionDone: Boolean) {
+    private fun handleDismiss(alarmId: Int, missionDone: Boolean, skipMission: Boolean) {
         val a = current
         if (a == null || a.id != alarmId) {
             // 울리는 중이 아님: 알림의 "지금 끄기"로 대기 중인 다시 알림을 취소한 경우
@@ -176,9 +180,13 @@ class AlarmService : Service() {
             stopIfIdle()
             return
         }
-        if (a.hasMission && !missionDone) return   // 미션 알람은 미션 완료로만 끌 수 있음
-        // 미션 알람의 기록은 미션 화면이 운동 횟수와 함께 남김
-        if (!a.hasMission) record(a, RecordKind.DISMISS)
+        // 미션 알람은 미션 완료 또는 "운동 없이 끄기"(3초 누르기)로만 끌 수 있음
+        if (a.hasMission && !missionDone && !skipMission) return
+        when {
+            // 미션 완료의 기록은 미션 화면이 운동 횟수와 함께 남김
+            a.hasMission && skipMission && !missionDone -> record(a, RecordKind.SKIP)
+            !a.hasMission -> record(a, RecordKind.DISMISS)
+        }
         finishRinging(a, stopService = true)
     }
 
@@ -496,6 +504,7 @@ class AlarmService : Service() {
         const val EXTRA_ALARM_ID = "alarm_id"
         const val EXTRA_MISSION_ACTIVE = "mission_active"
         const val EXTRA_MISSION_DONE = "mission_done"
+        const val EXTRA_SKIP_MISSION = "skip_mission"
 
         private const val CRESCENDO_MS = 30_000L
         private const val CRESCENDO_START = 0.1f
@@ -526,5 +535,9 @@ class AlarmService : Service() {
 
         fun dismissAfterMissionIntent(ctx: Context, alarmId: Int): Intent =
             actionIntent(ctx, ACTION_DISMISS, alarmId).putExtra(EXTRA_MISSION_DONE, true)
+
+        /** 운동 미션 알람을 운동 없이 끔 (기록: 건너뜀, 연속 기록 끊김) */
+        fun skipMissionIntent(ctx: Context, alarmId: Int): Intent =
+            actionIntent(ctx, ACTION_DISMISS, alarmId).putExtra(EXTRA_SKIP_MISSION, true)
     }
 }

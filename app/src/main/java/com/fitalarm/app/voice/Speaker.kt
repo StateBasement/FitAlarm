@@ -18,13 +18,15 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class Speaker(
     context: Context,
-    private val usage: Int,
+    usage: Int,
     private val style: VoiceStyle,
     private val onReady: ((Boolean) -> Unit)? = null,
 ) {
     private val main = Handler(Looper.getMainLooper())
     private var tts: TextToSpeech? = null
     private val callbacks = ConcurrentHashMap<String, () -> Unit>()
+    /** 어떤 소리 크기를 따를지 (알람: USAGE_ALARM, 미디어: USAGE_MEDIA) */
+    private var usage = usage
     private var seq = 0
 
     var ready = false
@@ -49,12 +51,7 @@ class Speaker(
             onReady?.invoke(false)
             return
         }
-        t.setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(usage)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build()
-        )
+        applyUsage(t)
         val voice = pickVoice(t, style.wantMale)
         if (voice != null) {
             try {
@@ -95,6 +92,21 @@ class Speaker(
             return false
         }
         return true
+    }
+
+    /** 이후에 읽는 문장부터 다른 소리 크기를 따름 (예: 알람이 끝나면 미디어 소리로) */
+    fun setUsage(newUsage: Int) {
+        usage = newUsage
+        tts?.let { if (ready) applyUsage(it) }
+    }
+
+    private fun applyUsage(t: TextToSpeech) {
+        t.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(usage)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build()
+        )
     }
 
     fun stop() {

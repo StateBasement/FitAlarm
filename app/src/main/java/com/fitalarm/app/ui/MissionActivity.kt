@@ -128,13 +128,10 @@ class MissionActivity : Activity(), PoseCamera.Listener {
 
         setContentView(buildUi())
         camera = PoseCamera(this, textureView, this)
+        // 알람 미션 중에는 알람 소리 크기, 연습은 미디어 소리 크기를 따름 (알람이 끝나면 switchToMediaAudio)
         val usage = if (mode == Mode.PRACTICE) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_ALARM
         speaker = Speaker(this, usage, SettingsRepository.get(this).voiceStyle)
-        tone = try {
-            ToneGenerator(if (mode == Mode.PRACTICE) AudioManager.STREAM_MUSIC else AudioManager.STREAM_ALARM, 70)
-        } catch (e: RuntimeException) {
-            null
-        }
+        tone = createTone(if (mode == Mode.PRACTICE) AudioManager.STREAM_MUSIC else AudioManager.STREAM_ALARM)
         render(session.snapshot(routine.first().type.setupGuide))
     }
 
@@ -422,6 +419,22 @@ class MissionActivity : Activity(), PoseCamera.Listener {
 
     private fun voiceOn() = ::voiceSwitch.isInitialized && voiceSwitch.isChecked
 
+    private fun createTone(stream: Int): ToneGenerator? = try {
+        ToneGenerator(stream, 70)
+    } catch (e: RuntimeException) {
+        null
+    }
+
+    /**
+     * 알람이 끝난 뒤의 소리("미션 완료" 멘트, 보너스 운동 음성·신호음)는 미디어 소리 크기를 따름.
+     * 알람이 꺼졌는데 알람 크기로 크게 말하지 않도록.
+     */
+    private fun switchToMediaAudio() {
+        speaker?.setUsage(AudioAttributes.USAGE_MEDIA)
+        tone?.release()
+        tone = createTone(AudioManager.STREAM_MUSIC)
+    }
+
     private fun say(text: String) {
         if (voiceOn()) speaker?.speak(text)
     }
@@ -485,6 +498,7 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         RecordRepository.append(this, entry)
         AlarmWidget.refresh(this)
         startService(AlarmService.dismissAfterMissionIntent(this, alarmId))
+        switchToMediaAudio()
 
         if (viaFallback) {
             showDone("알람 해제", "카메라 없이 알람을 껐어요", closeButton = false)

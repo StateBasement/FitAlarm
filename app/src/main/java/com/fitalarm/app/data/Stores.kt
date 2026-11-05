@@ -30,6 +30,8 @@ data class AppSettings(
     val calibration: Boolean = true,
     val holidayAutoUpdate: Boolean = true,
     val useDeviceCalendar: Boolean = true,
+    /** 울리는 중에 휴대폰을 뒤집으면 알람 소리를 10%로 줄임 */
+    val flipToQuiet: Boolean = true,
 )
 
 object SettingsRepository {
@@ -63,6 +65,7 @@ object SettingsRepository {
         put("calibration", s.calibration)
         put("holidayAutoUpdate", s.holidayAutoUpdate)
         put("useDeviceCalendar", s.useDeviceCalendar)
+        put("flipToQuiet", s.flipToQuiet)
     }
 
     internal fun fromJson(text: String): AppSettings = try {
@@ -79,6 +82,7 @@ object SettingsRepository {
             calibration = o.optBoolean("calibration", d.calibration),
             holidayAutoUpdate = o.optBoolean("holidayAutoUpdate", d.holidayAutoUpdate),
             useDeviceCalendar = o.optBoolean("useDeviceCalendar", d.useDeviceCalendar),
+            flipToQuiet = o.optBoolean("flipToQuiet", d.flipToQuiet),
         )
     } catch (e: JSONException) {
         AppSettings()

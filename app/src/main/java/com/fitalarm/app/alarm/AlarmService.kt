@@ -61,6 +61,9 @@ class AlarmService : Service() {
     // 음성 안내
     private var speaker: Speaker? = null
     private var ducked = false
+    /** 울리는 중에 휴대폰을 뒤집어 소리를 줄였는지 (이번 울림 동안 유지) */
+    private var flipQuiet = false
+    private var flipSensor: FlipSensor? = null
     private var currentIsSnooze = false
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -132,6 +135,7 @@ class AlarmService : Service() {
         currentIsSnooze = isSnoozeFire
         startSound(updated)
         startVibration()
+        startFlipSensor(updated)
         armRingTimeout(updated)
         RingState.set(updated.id)
         startAnnouncements(updated)
@@ -320,7 +324,8 @@ class AlarmService : Service() {
             val progress = ((SystemClock.elapsedRealtime() - crescendoStart).toFloat() / CRESCENDO_MS).coerceIn(0f, 1f)
             CRESCENDO_START + (1f - CRESCENDO_START) * progress
         } else 1f
-        val level = ramp * (if (isMissionQuiet()) MISSION_VOLUME else 1f) * (if (ducked) DUCK_VOLUME else 1f)
+        val level = ramp * (if (isMissionQuiet()) MISSION_VOLUME else 1f) * (if (ducked) DUCK_VOLUME else 1f) *
+            (if (flipQuiet) FLIP_VOLUME else 1f)
         try {
             p.setVolume(level, level)
         } catch (e: IllegalStateException) {
@@ -470,6 +475,7 @@ class AlarmService : Service() {
     }
 
     private fun stopRinging() {
+        stopFlipSensor()
         handler.removeCallbacks(ringTimeout)
         handler.removeCallbacks(missionIdleCheck)
         stopAnnouncements()
@@ -480,6 +486,31 @@ class AlarmService : Service() {
         missionActive = false
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
+    }
+
+    // ------------------------------------------------------------------ 뒤집어서 소리 줄이기
+
+    /** 설정이 켜져 있고 소리가 나는 알람이면, 울리는 동안만 휴대폰 방향 확인 */
+    private fun startFlipSensor(a: Alarm) {
+        stopFlipSensor()
+        if (!SettingsRepository.get(this).flipToQuiet || a.silent || a.volume <= 0) return
+        flipSensor = FlipSensor(this) { onFlipped() }.also { if (!it.start()) flipSensor = null }
+    }
+
+    private fun stopFlipSensor() {
+        flipSensor?.stop()
+        flipSensor = null
+        if (flipQuiet) {
+            flipQuiet = false
+            RingState.setFlipQuiet(false)
+        }
+    }
+
+    private fun onFlipped() {
+        if (current == null || flipQuiet) return
+        flipQuiet = true
+        updatePlayerVolume()
+        RingState.setFlipQuiet(true)
     }
 
     private fun stopIfIdle() {
@@ -513,6 +544,8 @@ class AlarmService : Service() {
         private const val MISSION_IDLE_MS = 45_000L
         private const val WAKE_LOCK_MAX_MS = 60 * 60_000L
         private const val DUCK_VOLUME = 0.2f
+        /** 뒤집었을 때 알람 소리 (원래 소리의 10%) */
+        private const val FLIP_VOLUME = 0.1f
         private const val FIRST_ANNOUNCE_DELAY_MS = 2_500L
         private const val REPEAT_ANNOUNCE_MS = 60_000L
 

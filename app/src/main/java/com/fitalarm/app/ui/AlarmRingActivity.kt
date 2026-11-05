@@ -43,6 +43,7 @@ class AlarmRingActivity : Activity() {
     private lateinit var missionBox: LinearLayout
     private lateinit var announceBox: LinearLayout
     private lateinit var announceText: TextView
+    private lateinit var flipNote: TextView
     private lateinit var primaryButton: TextView
     private lateinit var snoozeButton: TextView
     private lateinit var skipButton: HoldButton
@@ -57,6 +58,7 @@ class AlarmRingActivity : Activity() {
     private val ringListener: () -> Unit = {
         checkStillRinging()
         renderAnnouncing()
+        renderFlipQuiet()
     }
     private val graceCheck = Runnable { checkStillRinging() }
 
@@ -85,6 +87,7 @@ class AlarmRingActivity : Activity() {
         handler.post(clockTick)
         checkStillRinging()
         renderAnnouncing()
+        renderFlipQuiet()
     }
 
     override fun onStop() {
@@ -173,6 +176,14 @@ class AlarmRingActivity : Activity() {
         content.addView(timeRow, lp(WRAP, WRAP).margins(t = dp(2)))
         labelText = label("", 20f, Palette.TEXT, Fonts.BOLD).apply { gravity = Gravity.CENTER }
         content.addView(labelText, lp(WRAP, WRAP).margins(t = dp(4)))
+        // 휴대폰을 뒤집어 소리를 줄였을 때만 보임
+        flipNote = label("휴대폰을 뒤집어서 알람 소리를 10%로 줄였어요", 13f, Palette.TEXT_DIM).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(14), dp(6), dp(14), dp(6))
+            background = rounded(glass, dpf(16))
+            visibility = View.GONE
+        }
+        content.addView(flipNote, lp(WRAP, WRAP).margins(t = dp(10)))
 
         // 음성 안내 카드 (안내 중일 때만)
         announceText = label("", 15f, Palette.TEXT).apply { setLineSpacing(0f, 1.35f) }
@@ -230,6 +241,12 @@ class AlarmRingActivity : Activity() {
         root.addView(scroll, FrameLayout.LayoutParams(MATCH, MATCH))
         root.applySystemBarPadding()
         return root
+    }
+
+    private fun renderFlipQuiet() {
+        if (!::flipNote.isInitialized) return
+        val quiet = RingState.flipQuiet && RingState.ringingAlarmId == alarmId
+        flipNote.visibility = if (quiet) View.VISIBLE else View.GONE
     }
 
     private fun renderAnnouncing() {
@@ -290,6 +307,7 @@ class AlarmRingActivity : Activity() {
             snoozeButton.visibility = View.GONE
         }
         renderAnnouncing()
+        renderFlipQuiet()
     }
 
     private fun onPrimary() {

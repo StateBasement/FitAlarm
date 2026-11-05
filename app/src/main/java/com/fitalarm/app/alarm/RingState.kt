@@ -18,6 +18,11 @@ object RingState {
     var announcing: String? = null
         private set
 
+    /** 휴대폰을 뒤집어 알람 소리를 줄였는지 */
+    @Volatile
+    var flipQuiet: Boolean = false
+        private set
+
     private val listeners = CopyOnWriteArraySet<() -> Unit>()
     private val main = Handler(Looper.getMainLooper())
 
@@ -31,11 +36,17 @@ object RingState {
     fun clear() {
         ringingAlarmId = NONE
         announcing = null
+        flipQuiet = false
         notifyListeners()
     }
 
     fun setAnnouncing(text: String?) {
         announcing = text
+        notifyListeners()
+    }
+
+    fun setFlipQuiet(quiet: Boolean) {
+        flipQuiet = quiet
         notifyListeners()
     }
 

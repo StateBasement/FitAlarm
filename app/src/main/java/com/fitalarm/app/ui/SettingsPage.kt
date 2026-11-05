@@ -66,6 +66,15 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
         body.removeAllViews()
         val s = SettingsRepository.get(ctx)
         with(ctx) {
+            // ------------------------------------------------ 알람
+            body.addView(card("알람") {
+                addView(switchRow(
+                    "뒤집어서 소리 줄이기",
+                    "울리는 중에 화면이 바닥을 향하게 뒤집으면 알람 소리가 10%로 줄어요",
+                    s.flipToQuiet,
+                ) { v -> SettingsRepository.update(ctx) { it.copy(flipToQuiet = v) } })
+            }, lp())
+
             // ------------------------------------------------ 운동
             body.addView(card("운동") {
                 addView(switchRow(
@@ -88,7 +97,7 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
                 }
                 practiceValue.text = "시작"
                 addView(practiceRow)
-            }, lp())
+            }, lp().margins(t = dp(12)))
 
             // ------------------------------------------------ 음성
             body.addView(card("음성") {

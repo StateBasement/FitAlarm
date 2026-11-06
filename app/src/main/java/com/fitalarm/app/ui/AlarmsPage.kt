@@ -329,7 +329,8 @@ class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM)
 
     // ------------------------------------------------------------------ 권한 안내
 
-    private data class Banner(val text: String, val action: () -> Unit)
+    /** dismissKey 가 있으면 닫기(✕) 버튼을 보여주고, 닫으면 다시 보이지 않음 (선택 권한 안내용) */
+    private data class Banner(val text: String, val dismissKey: String? = null, val action: () -> Unit)
 
     private fun renderBanners(alarms: List<Alarm>) {
         val banners = ArrayList<Banner>()
@@ -374,6 +375,17 @@ class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM)
             })
         }
 
+        // 선택: 휴대폰 사용 중에도 운동 미션 알람을 전체 화면으로 (안 해도 알람은 팝업으로 울림)
+        val ui = ctx.getSharedPreferences(MainActivity.UI_PREFS, android.content.Context.MODE_PRIVATE)
+        if (alarms.any { it.enabled && it.hasMission } && !Settings.canDrawOverlays(ctx) &&
+            !ui.getBoolean(KEY_OVERLAY_BANNER_CLOSED, false)
+        ) {
+            banners.add(Banner(
+                "휴대폰을 쓰는 중에도 운동 알람이 전체 화면으로 뜨게 하려면 '다른 앱 위에 표시'를 허용하세요.",
+                dismissKey = KEY_OVERLAY_BANNER_CLOSED,
+            ) { openOverlaySettings(ctx) })
+        }
+
         bannerContainer.removeAllViews()
         for (b in banners) {
             val v = ctx.hbox {
@@ -383,6 +395,18 @@ class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM)
                 setOnClickListener { b.action() }
                 addView(ctx.label("!", 18f, Palette.WARM, Fonts.BOLD), lp(WRAP, WRAP).margins(r = dp(12)))
                 addView(ctx.label(b.text, 14f, Palette.ON_WARM).apply { setLineSpacing(0f, 1.2f) }, lp(0, WRAP, 1f))
+                b.dismissKey?.let { key ->
+                    addView(ctx.label("✕", 16f, Palette.ON_WARM, Fonts.BOLD).apply {
+                        gravity = Gravity.CENTER
+                        contentDescription = "안내 닫기"
+                        background = ripple(null)
+                        isClickable = true
+                        setOnClickListener {
+                            ui.edit().putBoolean(key, true).apply()
+                            refresh()
+                        }
+                    }, lp(dp(36), dp(36)).margins(l = dp(6)))
+                }
             }
             bannerContainer.addView(v, lp().margins(b = dp(12)))
         }
@@ -398,5 +422,20 @@ class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM)
 
     companion object {
         private const val PRACTICE_REPS = 5
+        private const val KEY_OVERLAY_BANNER_CLOSED = "overlay_banner_closed"
+
+        /** "다른 앱 위에 표시" 허용 화면 열기 (설정 화면에서도 사용) */
+        fun openOverlaySettings(ctx: android.content.Context) {
+            val pkg = ctx.packageName
+            try {
+                ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$pkg")))
+            } catch (e: Exception) {
+                try {
+                    ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
+                } catch (e2: Exception) {
+                    ctx.toast("휴대폰 설정 > 애플리케이션 > 알람핏 에서 '다른 앱 위에 표시'를 허용해 주세요")
+                }
+            }
+        }
     }
 }

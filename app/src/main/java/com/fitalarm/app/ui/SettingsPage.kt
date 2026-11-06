@@ -73,6 +73,15 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
                     "울리는 중에 화면이 바닥을 향하게 뒤집으면 알람 소리가 10%로 줄어요",
                     s.flipToQuiet,
                 ) { v -> SettingsRepository.update(ctx) { it.copy(flipToQuiet = v) } })
+                // 운동 미션 알람만 해당. 권한 상태를 그대로 보여주고, 누르면 휴대폰의 허용 화면으로
+                val overlayOk = android.provider.Settings.canDrawOverlays(ctx)
+                val (overlayRow, overlayValue) = valueRow(
+                    "사용 중에도 운동 알람 전체 화면",
+                    "휴대폰을 쓰는 중에 운동 미션 알람이 울리면 팝업 대신 알람 화면을 바로 띄워요. '다른 앱 위에 표시' 허용이 필요해요",
+                ) { AlarmsPage.openOverlaySettings(ctx) }
+                overlayValue.text = if (overlayOk) "허용됨" else "허용하기"
+                overlayValue.setTextColor(if (overlayOk) Palette.ACCENT else Palette.WARM)
+                addView(overlayRow)
             }, lp())
 
             // ------------------------------------------------ 운동

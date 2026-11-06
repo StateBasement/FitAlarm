@@ -1,6 +1,8 @@
 package com.fitalarm.app.alarm
 
 import android.app.Service
+import android.app.KeyguardManager
+import android.provider.Settings
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -129,6 +131,7 @@ class AlarmService : Service() {
         current = updated
         enterForeground(Notifications.buildRinging(this, updated))
         Notifications.cancelSnoozed(this, updated.id)
+        showMissionScreenOverApps(updated)
 
         acquireWakeLock()
         missionActive = false
@@ -486,6 +489,29 @@ class AlarmService : Service() {
         missionActive = false
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
+    }
+
+    // ------------------------------------------------------------------ 사용 중에도 전체 화면 (운동 미션 알람만)
+
+    /**
+     * 휴대폰을 쓰는 중이면 안드로이드는 알람 화면 대신 위쪽 팝업 알림을 보여줍니다.
+     * 운동 미션 알람은 "다른 앱 위에 표시"가 허용되어 있으면 알람 화면을 바로 전체 화면으로 띄웁니다.
+     * 미션이 없는 알람은 팝업 그대로. 잠금·화면 꺼짐 상태는 원래대로 전체 화면 알림이 처리.
+     */
+    private fun showMissionScreenOverApps(a: Alarm) {
+        if (!a.hasMission || !Settings.canDrawOverlays(this) || !isInUse()) return
+        try {
+            startActivity(Notifications.ringActivityIntent(this, a.id))
+        } catch (e: RuntimeException) {
+            // 실행이 막혀도 팝업 알림과 소리는 그대로 동작
+        }
+    }
+
+    /** 화면이 켜져 있고 잠금이 풀려 있으면 "사용 중" */
+    private fun isInUse(): Boolean {
+        val power = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return false
+        val keyguard = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager ?: return false
+        return power.isInteractive && !keyguard.isKeyguardLocked
     }
 
     // ------------------------------------------------------------------ 뒤집어서 소리 줄이기

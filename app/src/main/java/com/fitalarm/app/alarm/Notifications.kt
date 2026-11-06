@@ -51,7 +51,7 @@ object Notifications {
 
     private fun use24h(ctx: Context) = DateFormat.is24HourFormat(ctx)
 
-    private fun ringActivityIntent(ctx: Context, alarmId: Int, extra: Intent.() -> Unit = {}): Intent =
+    fun ringActivityIntent(ctx: Context, alarmId: Int, extra: Intent.() -> Unit = {}): Intent =
         Intent(ctx, AlarmRingActivity::class.java)
             .putExtra(AlarmRingActivity.EXTRA_ALARM_ID, alarmId)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION)

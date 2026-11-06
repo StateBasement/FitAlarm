@@ -1,6 +1,8 @@
 package com.fitalarm.app.ui
 
 import android.Manifest
+import android.widget.ScrollView
+import android.view.ViewGroup
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -97,6 +99,10 @@ class MissionActivity : Activity(), PoseCamera.Listener {
     private lateinit var doneSub: TextView
     private lateinit var doneClose: TextView
     private lateinit var bonusLayer: FrameLayout
+    /** 진행 카드·안내 시트를 담는 층. 화면 모양에 따라 applyMissionLayout 이 다시 배치 */
+    private lateinit var controls: FrameLayout
+    private lateinit var topPanel: View
+    private lateinit var guideSheet: LinearLayout
 
     private val ringListener: () -> Unit = {
         // 알람이 시간 초과·다시 알림 등으로 이미 끝났으면 미션 화면도 닫음
@@ -106,6 +112,7 @@ class MissionActivity : Activity(), PoseCamera.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lockPortraitOnPhones()
         Palette.apply(this)
         val practiceRoutine = intent.getStringExtra(EXTRA_PRACTICE_ROUTINE)
         mode = if (practiceRoutine != null) Mode.PRACTICE else Mode.ALARM
@@ -127,6 +134,7 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         startedAt = SystemClock.elapsedRealtime()
 
         setContentView(buildUi())
+        applyMissionLayout()
         camera = PoseCamera(this, textureView, this)
         // 알람 미션 중에는 알람 소리 크기, 연습은 미디어 소리 크기를 따름 (알람이 끝나면 switchToMediaAudio)
         val usage = if (mode == Mode.PRACTICE) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_ALARM
@@ -155,6 +163,8 @@ class MissionActivity : Activity(), PoseCamera.Listener {
      */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        lockPortraitOnPhones()
+        applyMissionLayout()
         val cam = camera ?: return
         if (!finished && cam.isRunning) {
             cam.stop()
@@ -252,6 +262,8 @@ class MissionActivity : Activity(), PoseCamera.Listener {
 
         val stack = FrameLayout(this)
         root.addView(stack, FrameLayout.LayoutParams(MATCH, MATCH))
+        controls = FrameLayout(this)
+        stack.addView(controls, FrameLayout.LayoutParams(MATCH, MATCH))
 
         // 위: 진행 카드
         val top = vbox {
@@ -300,7 +312,7 @@ class MissionActivity : Activity(), PoseCamera.Listener {
             }
             addView(hintText, lp(WRAP, WRAP).margins(t = dp(12)).apply { gravity = Gravity.CENTER_HORIZONTAL })
         }
-        stack.addView(topWrap, FrameLayout.LayoutParams(MATCH, WRAP, Gravity.TOP))
+        topPanel = topWrap
 
         // 아래: 안내 시트
         val bottom = vbox {
@@ -329,7 +341,7 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         bottom.addView(fallbackButton, lp().margins(t = dp(6)))
         exitButton = pillButton(exitLabel(), filled = false, heightDp = 52) { onExit() }
         bottom.addView(exitButton, lp().margins(t = dp(8)))
-        stack.addView(bottom, FrameLayout.LayoutParams(MATCH, WRAP, Gravity.BOTTOM))
+        guideSheet = bottom
 
         // 완료 화면
         doneOverlay = vbox {
@@ -358,6 +370,52 @@ class MissionActivity : Activity(), PoseCamera.Listener {
         stack.applySystemBarPadding()
         return root
     }
+
+    /**
+     * 화면 모양에 맞춰 배치.
+     *  - 세로(일반 폰, 태블릿 세로): 위에 진행 카드, 아래에 안내 시트. 넓은 화면이면 가운데 600dp 안에
+     *  - 넓은 가로 화면(태블릿·폴드 펼침을 가로로): 왼쪽에 진행 카드와 안내를 모은 패널, 오른쪽에 카메라 화면
+     */
+    private fun applyMissionLayout() {
+        if (!::controls.isInitialized) return
+        val cfg = resources.configuration
+        val wide = cfg.screenWidthDp > cfg.screenHeightDp && cfg.screenWidthDp >= LARGE_SCREEN_DP
+        (topPanel.parent as? ViewGroup)?.removeView(topPanel)
+        (guideSheet.parent as? ViewGroup)?.removeView(guideSheet)
+        controls.removeAllViews()
+
+        val previewLp = FrameLayout.LayoutParams(MATCH, MATCH, Gravity.CENTER)
+        if (wide) {
+            val panelW = minOf(dp(400), dp(cfg.screenWidthDp) * 45 / 100)
+            guideSheet.background = rounded(Palette.SURFACE, dpf(28))
+            val column = vbox {
+                addView(topPanel, lp())
+                addView(View(this@MissionActivity), lp(MATCH, 0, 1f))
+                addView(guideSheet, lp().margins(l = dp(14), r = dp(14), t = dp(12), b = dp(14)))
+            }
+            val scroll = ScrollView(this).apply {
+                isFillViewport = true
+                isVerticalScrollBarEnabled = false
+                addView(column, FrameLayout.LayoutParams(MATCH, WRAP))
+            }
+            controls.addView(scroll, FrameLayout.LayoutParams(panelW, MATCH, Gravity.START))
+            previewLp.leftMargin = panelW
+        } else {
+            guideSheet.background = GradientDrawableTop(Palette.SURFACE, dpf(28))
+            val w = sheetWidth()
+            controls.addView(topPanel, FrameLayout.LayoutParams(w, WRAP, Gravity.TOP or Gravity.CENTER_HORIZONTAL))
+            controls.addView(guideSheet, FrameLayout.LayoutParams(w, WRAP, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL))
+        }
+        previewFrame.layoutParams = previewLp
+
+        // 완료 화면: 넓은 화면에서 버튼이 늘어지지 않게 가운데 480dp 안에
+        val side = maxOf(dp(32), (dp(cfg.screenWidthDp) - dp(480)) / 2)
+        doneOverlay.setPadding(side, 0, side, 0)
+    }
+
+    /** 세로 배치에서 카드·시트 폭: 일반 폰은 화면 폭 그대로, 넓은 화면은 600dp */
+    private fun sheetWidth(): Int =
+        if (resources.configuration.screenWidthDp > CONTENT_MAX_DP) dp(600) else MATCH
 
     @Suppress("FunctionName")
     private fun GradientDrawableTop(color: Int, radius: Float) = android.graphics.drawable.GradientDrawable().apply {
@@ -586,7 +644,7 @@ class MissionActivity : Activity(), PoseCamera.Listener {
             gravity = Gravity.CENTER
         }, lp().margins(t = dp(12)))
 
-        bonusLayer.addView(sheet, FrameLayout.LayoutParams(MATCH, WRAP, Gravity.BOTTOM))
+        bonusLayer.addView(sheet, FrameLayout.LayoutParams(sheetWidth(), WRAP, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL))
         bonusLayer.visibility = View.VISIBLE
         sheet.translationY = dpf(400)
         sheet.animate().translationY(0f).setDuration(280).start()

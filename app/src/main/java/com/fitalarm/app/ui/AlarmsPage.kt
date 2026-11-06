@@ -99,7 +99,7 @@ class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM)
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             clipToPadding = false
-            addView(content)
+            addView(centeredColumn(content))   // 넓은 화면에서는 가운데 640dp 안에
             // 스크롤 중 광고가 + 버튼 밑으로 지나가면 버튼을 잠시 숨김 (광고를 가리지 않도록, AdMob 정책)
             setOnScrollChangeListener { _, _, _, _, _ -> updateFabForAd() }
         }

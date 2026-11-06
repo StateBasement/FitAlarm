@@ -69,15 +69,15 @@
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 알람이 울릴 때 잠금 화면 위에 뜨는 화면. 별도 태스크로 분리해 최근 앱 목록에 남지 않게 함 -->
+        <!-- 세로 고정은 일반 폰에서만 코드로 (lockPortraitOnPhones). 태블릿·폴드에서는 회전·크기 조절 허용 -->
         <activity
             android:name=".ui.AlarmRingActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:taskAffinity="${applicationId}.ring"
-            android:theme="@style/Theme.FitAlarm.Ring"
-            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+            android:theme="@style/Theme.FitAlarm.Ring" />
 
         <activity
             android:name=".ui.DaysOffActivity"
@@ -89,9 +89,7 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:excludeFromRecents="true"
             android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.FitAlarm.Ring"
-            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+            android:theme="@style/Theme.FitAlarm.Ring" />
 
         <service
             android:name=".alarm.AlarmService"

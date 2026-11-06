@@ -43,7 +43,7 @@ class RecordsPage(host: MainActivity) : Page(host, AdPlacement.RECORDS_BOTTOM) {
         content.addView(body, lp().margins(t = dp(12)))
         ScrollView(this).apply {
             isFillViewport = true
-            addView(content)
+            addView(centeredColumn(content))   // 넓은 화면에서는 가운데 640dp 안에
         }
     }
 

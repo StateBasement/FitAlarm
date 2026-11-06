@@ -64,6 +64,7 @@ class AlarmRingActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lockPortraitOnPhones()
         Palette.apply(this)
         showOverLockScreen()
         setupEdgeToEdge()
@@ -73,6 +74,12 @@ class AlarmRingActivity : Activity() {
         RingState.addListener(ringListener)
         // 화면 회전 등으로 다시 만들어진 경우에는 서비스 시작·미션 시작을 반복하지 않음
         handleIntent(intent, fresh = savedInstanceState == null)
+    }
+
+    /** 폴드를 접거나 펼칠 때: 화면을 다시 만들지 않고 세로 고정 여부만 다시 판단 (울리는 중인 알람 화면 유지) */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        lockPortraitOnPhones()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -236,7 +243,8 @@ class AlarmRingActivity : Activity() {
         val scroll = android.widget.ScrollView(this).apply {
             isFillViewport = true
             isVerticalScrollBarEnabled = false
-            addView(content, FrameLayout.LayoutParams(MATCH, WRAP))
+            // 넓은 화면에서는 버튼이 양옆으로 늘어지지 않게 가운데 520dp 안에 배치
+            addView(centeredColumn(content, RING_MAX_DP), FrameLayout.LayoutParams(MATCH, WRAP))
         }
         root.addView(scroll, FrameLayout.LayoutParams(MATCH, MATCH))
         root.applySystemBarPadding()
@@ -357,6 +365,7 @@ class AlarmRingActivity : Activity() {
         const val EXTRA_START_MISSION = "start_mission"
         private const val GRACE_MS = 5_000L
         const val SKIP_HOLD_MS = 3_000L
+        private const val RING_MAX_DP = 520
         private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
     }
 }

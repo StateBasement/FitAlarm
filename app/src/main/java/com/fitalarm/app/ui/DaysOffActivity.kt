@@ -59,7 +59,7 @@ class DaysOffActivity : Activity() {
             addView(holidayBox, lp())
         }, lp().margins(t = dp(12)))
 
-        root.addView(ScrollView(this).apply { addView(content) }, lp(MATCH, 0, 1f))
+        root.addView(ScrollView(this).apply { addView(centeredColumn(content)) }, lp(MATCH, 0, 1f))
         root.applySystemBarPadding()
         return root
     }

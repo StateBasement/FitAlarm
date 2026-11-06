@@ -133,14 +133,14 @@ class AlarmEditActivity : Activity() {
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true
-            addView(content)
+            addView(centeredColumn(content))   // 넓은 화면에서는 가운데 640dp 안에
         }
         root.addView(scroll, lp(MATCH, 0, 1f))
 
         val bar = hbox { setPadding(dp(16), dp(10), dp(16), dp(12)) }
         bar.addView(pillButton("취소", filled = false) { finish() }, lp(0, WRAP, 1f).margins(r = dp(6)))
         bar.addView(pillButton("저장", filled = true) { save() }, lp(0, WRAP, 1f).margins(l = dp(6)))
-        root.addView(bar, lp())
+        root.addView(centeredColumn(bar), lp())
 
         root.applySystemBarPadding(includeIme = true)
         return root

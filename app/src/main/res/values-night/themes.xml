@@ -6,8 +6,9 @@
         <item name="android:colorAccent">@color/accent</item>
         <item name="android:colorBackground">@color/bg</item>
         <item name="android:windowBackground">@color/bg</item>
-        <item name="android:statusBarColor">@color/bg</item>
-        <item name="android:navigationBarColor">@color/bg</item>
+        <!-- Android 14 이하: 화면이 상태바·내비게이션바 뒤까지 이어지도록 투명 (Android 15 이상은 기본이 투명) -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:alertDialogTheme">@style/Theme.FitAlarm.Dialog</item>

@@ -69,14 +69,14 @@ class OnboardingActivity : Activity() {
             addView(link("개인정보처리방침", SettingsPage.PRIVACY_POLICY_URL))
         }, lp().margins(t = dp(16)))
 
-        root.addView(ScrollView(this).apply { addView(content) }, lp(MATCH, 0, 1f))
+        root.addView(ScrollView(this).apply { addView(centeredColumn(content)) }, lp(MATCH, 0, 1f))
 
         val bar = vbox { setPadding(dp(20), dp(10), dp(20), dp(14)) }
         bar.addView(label("아래 버튼을 누르면 위 내용과 이용약관에 동의하는 것으로 봐요.", 12.5f, Palette.TEXT_DIM).apply {
             gravity = Gravity.CENTER
         }, lp().margins(b = dp(10)))
         bar.addView(pillButton("동의하고 시작하기", filled = true, heightDp = 56) { accept() }, lp())
-        root.addView(bar, lp())
+        root.addView(centeredColumn(bar), lp())
 
         root.applySystemBarPadding()
         return root

@@ -1,6 +1,8 @@
 package com.fitalarm.app.ui
 
 import android.app.Activity
+import android.widget.FrameLayout
+import android.content.pm.ActivityInfo
 import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Configuration
@@ -278,13 +280,9 @@ fun Context.toast(message: String) {
 /**
  * 모든 Android 버전에서 화면을 상태바/내비게이션바 뒤까지 확장하고 (Android 15 의 기본 동작과 통일),
  * 실제 여백은 applySystemBarPadding 으로 직접 처리. 밝은 화면이면 상태바 아이콘을 어둡게.
+ * Android 14 이하의 투명한 상태바·내비게이션바는 테마(themes.xml)에서 지정 (Android 15 에서 지원 중단된 Window 색상 API 를 쓰지 않음).
  */
 fun Activity.setupEdgeToEdge(lightBars: Boolean = !Palette.isDark) {
-    @Suppress("DEPRECATION")
-    run {
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
-    }
     val decor = window.decorView
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         window.setDecorFitsSystemWindows(false)
@@ -307,6 +305,38 @@ private fun legacyEdgeToEdge(decor: View, lightBars: Boolean) {
     if (lightBars) flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
     decor.systemUiVisibility = flags
 }
+
+/** 일반 폰에서만 세로로 고정. 태블릿·폴드를 펼친 넓은 화면(최소 폭 600dp 이상)은 자유롭게 회전 (Android 16 대형 화면 권장) */
+fun Activity.lockPortraitOnPhones() {
+    val wanted = if (resources.configuration.smallestScreenWidthDp >= LARGE_SCREEN_DP) {
+        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    } else {
+        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+    if (requestedOrientation != wanted) requestedOrientation = wanted
+}
+
+const val LARGE_SCREEN_DP = 600
+/** 넓은 화면에서 목록·설정 내용의 최대 폭 */
+const val CONTENT_MAX_DP = 640
+
+/**
+ * 넓은 화면(태블릿·폴드 펼침)에서 내용이 양옆으로 너무 늘어지지 않게 최대 폭을 두고 가운데 정렬.
+ * 폭이 maxDp 보다 좁은 일반 폰에서는 아무것도 바꾸지 않음.
+ */
+class CenteredColumn(context: Context, maxDp: Int) : FrameLayout(context) {
+    private val maxPx = context.dp(maxDp)
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val size = MeasureSpec.getSize(widthMeasureSpec)
+        val side = if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED && size > maxPx) (size - maxPx) / 2 else 0
+        if (paddingLeft != side || paddingRight != side) setPadding(side, paddingTop, side, paddingBottom)
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+}
+
+fun Context.centeredColumn(child: View, maxDp: Int = CONTENT_MAX_DP): View =
+    CenteredColumn(this, maxDp).apply { addView(child, FrameLayout.LayoutParams(MATCH, MATCH)) }
 
 /** 상태바·내비게이션바·노치(·키보드) 만큼 안쪽 여백을 더함 */
 fun View.applySystemBarPadding(includeIme: Boolean = false) {

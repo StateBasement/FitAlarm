@@ -147,6 +147,5 @@ object NunbodyAuth {
         BiometricPrompt.BIOMETRIC_ERROR_TIMEOUT,
         BiometricPrompt.BIOMETRIC_ERROR_CANCELED,
         BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED,
-        BiometricPrompt.BIOMETRIC_ERROR_NEGATIVE_BUTTON,
     )
 }

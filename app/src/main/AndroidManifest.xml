@@ -27,6 +27,19 @@
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     <!-- 선택: 휴대폰 사용 중에도 운동 미션 알람 화면을 전체 화면으로 띄움 (사용자가 설정에서 직접 허용) -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 눈바디 잠금: 지문·얼굴·휴대폰 비밀번호로 본인 확인 (지문 정보는 안드로이드가 처리하고 앱은 성공/실패만 받음) -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- 눈바디 사진을 갤러리에 내보낼 때 Android 9 이하에서만 필요 (10 이상은 권한 없이 저장) -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- 눈바디 '폰 기본 카메라로 찍기': 기본 카메라 앱을 찾기 위해 (Android 11 이상의 앱 목록 공개 범위) -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -90,6 +103,46 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:theme="@style/Theme.FitAlarm.Ring" />
+
+        <!-- 눈바디 (운동 미션 안의 선택 기능). 화면이 돌아도 다시 만들지 않음 (입력 중인 값·카메라 유지) -->
+        <activity
+            android:name=".ui.NunbodyActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false" />
+        <activity
+            android:name=".ui.NunbodyCameraActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false"
+            android:theme="@style/Theme.FitAlarm.Camera" />
+        <activity
+            android:name=".ui.NunbodySaveActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.NunbodyPhotoActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false" />
+        <activity
+            android:name=".ui.NunbodyExportActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false" />
+        <activity
+            android:name=".ui.NunbodySettingsActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false" />
+
+        <!-- 눈바디 사진 보내기·기본 카메라 앱과 파일 주고받기 (공개하지 않고 넘겨준 파일에만 그때그때 권한) -->
+        <provider
+            android:name=".nunbody.NunbodyFileProvider"
+            android:authorities="${applicationId}.nunbody"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
+        <!-- 눈바디 촬영 알림 (기본 꺼짐) -->
+        <receiver
+            android:name=".nunbody.NunbodyReminderReceiver"
+            android:exported="false" />
 
         <service
             android:name=".alarm.AlarmService"

@@ -38,6 +38,8 @@ import com.fitalarm.app.core.VibrationPattern
 import com.fitalarm.app.core.describe
 import com.fitalarm.app.data.AlarmRepository
 import com.fitalarm.app.data.HolidayRepository
+import com.fitalarm.app.data.NunbodyRepository
+import com.fitalarm.app.nunbody.NunbodyReminder
 import com.fitalarm.app.data.SettingsRepository
 import com.fitalarm.app.holiday.HolidaySync
 import com.fitalarm.app.defaultVibrator
@@ -76,6 +78,17 @@ class AlarmEditActivity : Activity() {
     private lateinit var missionBody: LinearLayout
     private lateinit var routineSummary: TextView
     private val exerciseRows = LinkedHashMap<ExerciseType, ExerciseRow>()
+    private var nunbodySwitch: Switch? = null
+
+    // 처음 안내에서 비출 부분
+    private lateinit var timeCard: View
+    private lateinit var repeatCard: View
+    private lateinit var dayOffCard: View
+    private lateinit var soundCard: View
+    private lateinit var vibrationCard: View
+    private lateinit var snoozeCard: View
+    private lateinit var missionCard: View
+    private lateinit var saveBar: View
 
     private class ExerciseRow(
         val badge: TextView,
@@ -98,6 +111,31 @@ class AlarmEditActivity : Activity() {
         }
         setContentView(buildUi())
         renderAll()
+        if (intent.getBooleanExtra(EXTRA_GUIDE, false) || !GuideOverlay.seen(this, GuideOverlay.ALARM_EDIT)) startGuide()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 설정 탭에서 눈바디를 바꿨을 수 있음
+        nunbodySwitch?.let { sw -> if (sw.isChecked != NunbodyRepository.isEnabled(this)) sw.isChecked = NunbodyRepository.isEnabled(this) }
+    }
+
+    /** 처음 한 번: 화면의 기능을 차례로 짚어 줌 (설정 탭 › 사용 방법에서 다시 보기) */
+    private fun startGuide() {
+        GuideOverlay.markSeen(this, GuideOverlay.ALARM_EDIT)
+        GuideOverlay.show(this, listOf(
+            GuideStep("시간", "알람 시각", "숫자를 위아래로 밀어서 시각을 정해요. 아래에 몇 시간 뒤에 울리는지 보여 드려요.") { listOf(timeCard) },
+            GuideStep("반복·쉬는 날", "울리는 날", "울릴 요일을 고르고 이름을 붙일 수 있어요. 공휴일·내 휴무일에는 건너뛰고, 오늘의 운동을 읽어 주기도 해요.") {
+                listOf(repeatCard, dayOffCard)
+            },
+            GuideStep("소리", "소리·진동·다시 알림", "알람음과 볼륨, 점점 크게를 정하고 '미리 듣기'로 확인해요. 아래에서 진동과 다시 알림 간격도 고를 수 있어요.") {
+                listOf(soundCard)
+            },
+            GuideStep("운동 미션", "운동해야 꺼지는 알람이에요",
+                "켜면 알람이 울릴 때 카메라가 동작을 세요. 운동을 고르고 − / + 로 횟수를 정한 뒤 '미리 연습하기'로 확인해 보세요. " +
+                    "맨 아래 '눈바디 기록'은 원할 때만 켜요.") { listOf(missionCard) },
+            GuideStep("저장", "다 정했으면 저장", "저장을 누르면 알람이 켜져요. 이 안내는 설정 탭 › 사용 방법에서 다시 볼 수 있어요.") { listOf(saveBar) },
+        ))
     }
 
     override fun onPause() {
@@ -123,13 +161,14 @@ class AlarmEditActivity : Activity() {
         root.addView(header, lp())
 
         val content = vbox { setPadding(dp(16), dp(8), dp(16), dp(24)) }
-        content.addView(buildTimeCard(), cardLp())
-        content.addView(buildRepeatCard(), cardLp())
-        content.addView(buildDayOffCard(), cardLp())
-        content.addView(buildSoundCard(), cardLp())
-        content.addView(buildVibrationCard(), cardLp())
-        content.addView(buildSnoozeCard(), cardLp())
-        content.addView(buildMissionCard(), cardLp())
+        timeCard = buildTimeCard()
+        repeatCard = buildRepeatCard()
+        dayOffCard = buildDayOffCard()
+        soundCard = buildSoundCard()
+        vibrationCard = buildVibrationCard()
+        snoozeCard = buildSnoozeCard()
+        missionCard = buildMissionCard()
+        listOf(timeCard, repeatCard, dayOffCard, soundCard, vibrationCard, snoozeCard, missionCard).forEach { content.addView(it, cardLp()) }
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -140,6 +179,7 @@ class AlarmEditActivity : Activity() {
         val bar = hbox { setPadding(dp(16), dp(10), dp(16), dp(12)) }
         bar.addView(pillButton("취소", filled = false) { finish() }, lp(0, WRAP, 1f).margins(r = dp(6)))
         bar.addView(pillButton("저장", filled = true) { save() }, lp(0, WRAP, 1f).margins(l = dp(6)))
+        saveBar = bar
         root.addView(centeredColumn(bar), lp())
 
         root.applySystemBarPadding(includeIme = true)
@@ -641,6 +681,20 @@ class AlarmEditActivity : Activity() {
         missionBody.addView(routineSummary, lp().margins(t = dp(10)))
         missionBody.addView(pillButton("이 루틴 미리 연습하기", filled = false, heightDp = 44) { practiceRoutine() },
             lp().margins(t = dp(10), b = dp(4)))
+        // 눈바디: 운동 미션 안의 선택 기능. 모든 알람에 공통인 설정 하나
+        missionBody.addView(divider(), lp(MATCH, dp(1)).margins(t = dp(10), b = dp(2)))
+        val (nbRow, nbSwitch, _) = switchRowWithRefs(
+            "눈바디 기록도 쓰기 (선택)",
+            "기록 탭에서 사진과 체중으로 몸 변화를 남겨요 · 모든 알람 공통",
+            NunbodyRepository.isEnabled(this@AlarmEditActivity),
+        ) { on ->
+            if (on == NunbodyRepository.isEnabled(this@AlarmEditActivity)) return@switchRowWithRefs
+            NunbodyRepository.update(this@AlarmEditActivity) { it.copy(enabled = on) }
+            NunbodyReminder.schedule(this@AlarmEditActivity)
+            toast(if (on) "기록 탭에 눈바디가 생겼어요" else "눈바디를 껐어요. 찍어 둔 사진은 그대로 남아 있어요")
+        }
+        nunbodySwitch = nbSwitch
+        missionBody.addView(nbRow, lp())
         addView(missionBody, lp())
     }
 
@@ -801,6 +855,8 @@ class AlarmEditActivity : Activity() {
 
     companion object {
         const val EXTRA_ALARM_ID = "alarm_id"
+        /** 설정 탭 › 사용 방법에서 연 경우: 안내를 처음부터 */
+        const val EXTRA_GUIDE = "guide"
         private const val REQ_RINGTONE = 11
         private const val REQ_MUSIC = 12
         private const val REQ_CAMERA = 13

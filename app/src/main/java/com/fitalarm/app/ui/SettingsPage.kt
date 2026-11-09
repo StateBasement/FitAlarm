@@ -22,6 +22,8 @@ import com.fitalarm.app.data.AlarmRepository
 import com.fitalarm.app.data.BackupManager
 import com.fitalarm.app.data.CalibrationRepository
 import com.fitalarm.app.data.HolidayRepository
+import com.fitalarm.app.data.NunbodyRepository
+import com.fitalarm.app.nunbody.NunbodyReminder
 import com.fitalarm.app.data.SettingsRepository
 import com.fitalarm.app.holiday.HolidaySync
 import com.fitalarm.app.monetize.AdMob
@@ -106,6 +108,16 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
                 }
                 practiceValue.text = "시작"
                 addView(practiceRow)
+                // 눈바디: 운동 미션 안의 선택 기능 (운동 미션을 켠 알람이 있을 때만 보임)
+                val nbOn = NunbodyRepository.isEnabled(ctx)
+                if (nbOn || AlarmRepository.getAll(ctx).any { it.hasMission }) {
+                    addView(switchRow("눈바디 기록", "기록 탭에서 사진과 체중으로 몸 변화를 남겨요 · 기본 꺼짐", nbOn) { v ->
+                        NunbodyRepository.update(ctx) { it.copy(enabled = v) }
+                        NunbodyReminder.schedule(ctx)
+                        ctx.toast(if (v) "기록 탭에 눈바디가 생겼어요" else "눈바디를 껐어요. 찍어 둔 사진은 그대로 남아 있어요")
+                        refresh()
+                    })
+                }
             }, lp().margins(t = dp(12)))
 
             // ------------------------------------------------ 음성
@@ -162,7 +174,7 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
 
             // ------------------------------------------------ 백업
             body.addView(card("백업") {
-                addView(label("알람, 설정, 내 휴무일, 개인 보정, 기록을 파일 하나로 저장해요. 폰을 바꿀 때 사용하세요.", 13f, Palette.TEXT_DIM).apply {
+                addView(label("알람, 설정, 내 휴무일, 개인 보정, 기록을 파일 하나로 저장해요. 폰을 바꿀 때 사용하세요. (눈바디 사진은 넣지 않아요)", 13f, Palette.TEXT_DIM).apply {
                     setLineSpacing(0f, 1.2f)
                 }, lp().margins(t = dp(4), b = dp(6)))
                 addView(label("백업 파일은 암호화되지 않아요. 다른 사람에게 보내거나 공개된 곳에 올리지 마세요.", 12.5f, Palette.WARN).apply {
@@ -198,6 +210,23 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
             if (Monetization.supportVisible(this)) {
                 body.addView(host.supportCard { host.refreshCurrent() }, lp().margins(t = dp(12)))
             }
+
+            // ------------------------------------------------ 사용 방법 (처음 한 번 보여 준 안내 다시 보기)
+            body.addView(card("사용 방법") {
+                val (alarmRow, alarmValue) = valueRow("알람 설정 안내", "알람 추가 화면의 기능을 하나씩 짚어 줘요") {
+                    ctx.startActivity(Intent(ctx, AlarmEditActivity::class.java).putExtra(AlarmEditActivity.EXTRA_GUIDE, true))
+                }
+                alarmValue.text = "보기"
+                addView(alarmRow)
+                if (NunbodyRepository.isEnabled(ctx)) {
+                    val (nbRow, nbValue) = valueRow("눈바디 설정 안내", "잠금·캡처 차단 같은 눈바디 기능을 알려 줘요") {
+                        ctx.startActivity(Intent(ctx, NunbodySettingsActivity::class.java).putExtra(NunbodySettingsActivity.EXTRA_GUIDE, true))
+                    }
+                    nbValue.text = "보기"
+                    addView(nbRow)
+                }
+                addView(label("처음 그 화면에 들어갈 때 한 번 보여 드린 안내를 다시 볼 수 있어요.", 12.5f, Palette.TEXT_DIM), lp().margins(t = dp(2), b = dp(8)))
+            }, lp().margins(t = dp(12)))
 
             // ------------------------------------------------ 정보
             val version = try {

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.fitalarm.app.holiday.HolidaySync
+import com.fitalarm.app.nunbody.NunbodyReminder
 
 /** AlarmManager 가 알람 시각에 호출 → 알람 재생 서비스 시작 */
 class AlarmReceiver : BroadcastReceiver() {
@@ -39,6 +40,7 @@ class SystemEventReceiver : BroadcastReceiver() {
             ACTION_EXACT_ALARM_PERMISSION_CHANGED -> {
                 AlarmScheduler(context).rescheduleAll()
                 HolidaySync.schedulePeriodic(context)
+                NunbodyReminder.schedule(context)
             }
         }
     }

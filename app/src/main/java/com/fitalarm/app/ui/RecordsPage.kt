@@ -11,7 +11,13 @@ import com.fitalarm.app.R
 import com.fitalarm.app.core.DayResult
 import com.fitalarm.app.core.ExerciseType
 import com.fitalarm.app.core.RecordStats
+import com.fitalarm.app.core.BodyNumbers
+import com.fitalarm.app.core.NunbodyStats
 import com.fitalarm.app.data.HolidayRepository
+import com.fitalarm.app.data.NunbodyRepository
+import com.fitalarm.app.nunbody.NunbodyImages
+import com.fitalarm.app.nunbody.NunbodyReminder
+import android.content.Intent
 import com.fitalarm.app.data.RecordRepository
 import com.fitalarm.app.monetize.AdPlacement
 import java.time.LocalDate
@@ -97,6 +103,9 @@ class RecordsPage(host: MainActivity) : Page(host, AdPlacement.RECORDS_BOTTOM) {
             }
             body.addView(tiles, lp().margins(t = dp(12)))
 
+            // 눈바디 (운동 미션 안에서 켠 경우에만)
+            if (NunbodyRepository.isEnabled(this)) body.addView(nunbodyCard(), lp().margins(t = dp(12)))
+
             // 월간 달력
             val cal = card { }
             val headerRow = hbox()
@@ -155,6 +164,86 @@ class RecordsPage(host: MainActivity) : Page(host, AdPlacement.RECORDS_BOTTOM) {
     }
 
     private fun short(t: ExerciseType) = t.title.substringBefore(" (")
+
+    /**
+     * 기록 탭의 눈바디 카드. 이 탭은 잠겨 있지 않으므로 잠금을 켠 경우 사진·체중을 보여 주지 않고
+     * 자물쇠 칸만 보여 줌. 잠금을 끈 경우에도 '사진 가리기'면 흐리게.
+     */
+    private fun nunbodyCard(): View = with(ctx) {
+        val s = NunbodyRepository.settings(this)
+        val photos = NunbodyRepository.photos(this)
+        val open = { startActivity(Intent(this, NunbodyActivity::class.java)) }
+        card {
+            setPadding(dp(18), dp(12), dp(18), dp(14))
+            addView(hbox {
+                addView(label("눈바디", 18f, Palette.TEXT, Fonts.BOLD))
+                if (s.lock) {
+                    addView(chip("잠금", Palette.ACCENT_SOFT, Palette.ON_ACCENT_SOFT, 11f).apply {
+                        val d = getDrawable(R.drawable.ic_lock)?.mutate()?.apply {
+                            setBounds(0, 0, dp(12), dp(12))
+                            setTint(Palette.ON_ACCENT_SOFT)
+                        }
+                        setCompoundDrawablesRelative(d, null, null, null)
+                        compoundDrawablePadding = dp(4)
+                    }, lp(WRAP, WRAP).margins(l = dp(8)))
+                }
+                addView(spacer())
+                addView(label("전체 보기 ›", 14f, Palette.ACCENT, Fonts.MEDIUM).apply {
+                    setPadding(dp(8), dp(10), 0, dp(10))
+                    background = rippleOnly(12)
+                    isClickable = true
+                    setOnClickListener { open() }
+                })
+            }, lp())
+            val last = photos.firstOrNull()
+            addView(label(
+                if (last == null) "아직 사진이 없어요. 원할 때 찍어서 몸 변화를 남겨 보세요"
+                else "${last.date.monthValue}월 ${last.date.dayOfMonth}일에 마지막으로 찍었어요 · 사진 ${photos.size}장",
+                13f, Palette.TEXT_DIM,
+            ), lp().margins(b = dp(10)))
+            if (photos.isNotEmpty()) {
+                val cells = photos.take(3).map { p ->
+                    vbox {
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        val (frame, img) = photoTile(1.15f)
+                        if (s.lock) {
+                            frame.addView(icon(R.drawable.ic_lock, Palette.TEXT_FAINT, 22), FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
+                        } else {
+                            NunbodyImages.load(img, NunbodyRepository.file(this@with, p), 300, s.blur)
+                            if (s.blur) frame.addView(blurBadge(), FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
+                        }
+                        frame.isClickable = true
+                        frame.setOnClickListener { open() }
+                        addView(frame, lp())
+                        addView(label(String.format(java.util.Locale.ROOT, "%02d.%02d", p.date.monthValue, p.date.dayOfMonth), 12f, Palette.TEXT_DIM),
+                            lp(WRAP, WRAP).margins(t = dp(6)))
+                    }
+                }
+                addView(gridRows(cells), lp())
+                if (!s.lock) {
+                    NunbodyStats.latestWeight(photos)?.let { lw ->
+                        addView(hbox {
+                            setPadding(dp(14), dp(10), dp(14), dp(10))
+                            background = rounded(Palette.BG, dpf(16))
+                            gravity = Gravity.BOTTOM
+                            addView(label("체중", 12.5f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(r = dp(8)))
+                            addView(label("${BodyNumbers.format(lw.weightKg!!)}kg", 18f, Palette.TEXT, Fonts.BOLD))
+                            NunbodyStats.changeSincePrevious(photos)?.let { c ->
+                                addView(label("지난번보다 ${BodyNumbers.formatChange(c)}", 12.5f, Palette.TEXT_DIM, Fonts.MEDIUM), lp(WRAP, WRAP).margins(l = dp(8)))
+                            }
+                        }, lp().margins(t = dp(12)))
+                    }
+                }
+            }
+            addView(pillButton("사진 찍기", filled = false, heightDp = 48) {
+                startActivity(Intent(this@with, NunbodyCameraActivity::class.java))
+            }, lp().margins(t = dp(12)))
+            NunbodyReminder.nextAt(this@with)?.let { n ->
+                val time = com.fitalarm.app.core.AlarmMath.formatTime(n.hour, n.minute, android.text.format.DateFormat.is24HourFormat(this@with))
+                addView(label("다음 촬영 알림 · ${n.monthValue}월 ${n.dayOfMonth}일 $time", 12.5f, Palette.TEXT_DIM), lp().margins(t = dp(10), b = dp(2)))
+            }
+        }
+    }
 
     private fun dashedRing(): GradientDrawable = GradientDrawable().apply {
         shape = GradientDrawable.OVAL

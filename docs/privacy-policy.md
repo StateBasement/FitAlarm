@@ -1,6 +1,6 @@
 # 알람핏 개인정보처리방침
 
-시행일: 2026년 10월 29일
+시행일: 2026년 11월 9일
 
 Dev_light(이하 "개발자")은 안드로이드 앱 「알람핏(Alarm Fit)」(이하 "앱")을 제공하면서 「개인정보 보호법」 등 관련 법령을 지키고, 이용자의 개인정보가 어떻게 다뤄지는지 다음과 같이 알려드립니다.
 
@@ -9,6 +9,7 @@ Dev_light(이하 "개발자")은 안드로이드 앱 「알람핏(Alarm Fit)」(
 - 앱에는 **회원가입·로그인이 없고**, 개발자는 **별도 서버를 운영하지 않습니다.**
 - **개발자는 이용자의 개인정보를 수집하거나 저장하지 않습니다.** 광고와 관련해 개발자가 받는 것은 광고 노출·클릭 수 같은 집계 보고서뿐이며, 이용자 개인을 알아볼 수 있는 정보는 받지 않습니다.
 - 카메라 영상, 달력 일정, 알람 설정, 운동 기록은 **이용자의 기기 안에서만 처리**되며 개발자나 광고 회사에 전송되지 않습니다.
+- 이용자가 직접 켜서 쓰는 **눈바디(몸 사진·체중·키·메모) 기록도 기기 안에만 저장**되며, 이용자가 직접 내보내기 전에는 어디에도 전송되지 않습니다.
 - 다만 앱에 포함된 Google의 두 기능이 일부 정보를 **Google로 직접 전송**합니다(아래 4항).
   - **ML Kit**(운동 동작 인식): 기능 진단과 사용 통계를 위한 기기 정보 등
   - **AdMob**(광고): 광고 표시를 위한 광고 ID, IP 주소, 앱·광고 이용 정보 등
@@ -22,6 +23,8 @@ Dev_light(이하 "개발자")은 안드로이드 앱 「알람핏(Alarm Fit)」(
 | 알람 설정, 내 휴무일, 운동 기록, 개인 보정 값 | 알람 시각·반복·알람음 설정, 등록한 휴무일, 날짜별 운동 횟수와 연속 기록, 동작 인식 기준값을 저장합니다. | 앱 내부 저장소, 앱 삭제 또는 앱 데이터 삭제 시 함께 삭제. 구글 클라우드 백업에는 올리지 않으며, 이용자가 새 휴대폰으로 직접 옮길 때(기기 간 이전)만 함께 옮겨짐 |
 | 알람음으로 고른 음악 파일 | 이용자가 시스템 파일 선택 화면에서 직접 고른 파일 하나에 대해서만 재생 권한을 받습니다. | 파일 위치(주소)만 저장 |
 | 백업 파일 | 이용자가 "백업 내보내기"를 누르면 위 설정과 기록을 이용자가 고른 위치에 파일로 저장합니다. 이 파일은 암호화되지 않으므로 이용자가 안전하게 보관해야 합니다. | 이용자가 지정한 위치 |
+| 눈바디 사진·체중·키·메모 (선택 기능, 기본 꺼짐) | 이용자가 운동 미션 안에서 '눈바디 기록'을 켠 경우에만, 이용자가 직접 찍은 몸 사진과 적은 체중·키·메모를 저장해 기록 탭에서 보여 줍니다. 사진에 담긴 위치(GPS) 정보는 저장할 때 지웁니다. 기본으로 잠금(지문·휴대폰 비밀번호), 캡처 차단, 목록의 사진 가리기가 켜져 있습니다. 지문·얼굴 정보는 안드로이드가 처리하며 앱은 인증 성공 여부만 받습니다. | 앱 전용 저장 공간 (갤러리·다른 앱에서 보이지 않음). 구글 클라우드 백업과 앱의 백업 파일에는 넣지 않으며, 이용자가 새 휴대폰으로 직접 옮길 때(기기 간 이전)만 함께 옮겨짐. 앱 삭제 또는 눈바디 설정 > 사진 모두 지우기로 삭제 |
+| 눈바디 내보내기 | 이용자가 '갤러리에 저장'이나 '보내기'를 누른 사진과 체중 기록 표만, 이용자가 고른 곳(휴대폰 갤러리의 '알람핏' 앨범, 다운로드 폴더, 이용자가 고른 앱)으로 내보냅니다. 내보낸 파일에는 앱의 잠금이 적용되지 않습니다. | 이용자가 지정한 위치 |
 | 움직임 센서(중력·가속도) | "뒤집어서 소리 줄이기"를 켠 경우, 알람이 울리는 동안에만 휴대폰이 엎어졌는지 확인합니다. 권한이 필요 없는 일반 센서이며 값은 판정에만 씁니다. | 저장하지 않음 |
 | 음성 안내 | 알람 시 날짜·시각·운동 이름을 폰에 설치된 음성 엔진(삼성·구글 등)으로 읽습니다. 앱은 읽을 문장만 엔진에 전달합니다. | 저장하지 않음 |
 
@@ -94,7 +97,9 @@ ML Kit는 위 정보를 서드 파티에 제공하지 않는다고 밝히고 있
 
 | 권한 | 용도 | 필수 여부 |
 |---|---|---|
-| 카메라 | 운동 미션의 동작 인식 | 운동 미션 사용 시 필요 (거부해도 일반 알람은 사용 가능) |
+| 카메라 | 운동 미션의 동작 인식, 눈바디 사진 촬영 | 운동 미션·눈바디 사용 시 필요 (거부해도 일반 알람은 사용 가능) |
+| 생체 인식(지문·얼굴) 사용 | 눈바디 잠금을 풀 때 본인 확인 (휴대폰 비밀번호로도 가능) | 눈바디 잠금 사용 시. 지문·얼굴 정보는 앱에 전달되지 않음 |
+| 저장소 쓰기 (Android 9 이하만) | 눈바디 사진을 이용자가 갤러리에 내보낼 때 | 선택 (Android 10 이상은 권한 없이 저장) |
 | 캘린더 읽기 | 폰 달력의 공휴일 달력 확인 | 선택 (거부해도 앱 내장 규칙과 공휴일 업데이트로 동작) |
 | 알림 | 알람 화면·다시 알림·놓친 알람 안내 | 알람 표시에 필요 |
 | 정확한 알람, 전체 화면 알림 | 정해진 시각에 잠금 화면 위로 알람 화면 표시 | 알람 앱 핵심 기능 |
@@ -111,7 +116,7 @@ ML Kit는 위 정보를 서드 파티에 제공하지 않는다고 밝히고 있
 
 ## 9. 이용자의 권리
 
-이용자는 언제든지 앱 안에서 알람·휴무일을 삭제하거나 개인 보정을 초기화할 수 있고, 위 8항의 방법으로 기기 안의 모든 데이터를 지울 수 있습니다. 광고 ID와 맞춤형 광고는 5항의 방법으로 통제할 수 있으며, 권한은 휴대폰 설정에서 언제든 철회할 수 있습니다. 개인정보와 관련한 문의는 아래 연락처로 보내 주세요.
+이용자는 언제든지 앱 안에서 알람·휴무일·눈바디 사진을 삭제하거나 개인 보정을 초기화할 수 있고, 위 8항의 방법으로 기기 안의 모든 데이터를 지울 수 있습니다. 광고 ID와 맞춤형 광고는 5항의 방법으로 통제할 수 있으며, 권한은 휴대폰 설정에서 언제든 철회할 수 있습니다. 개인정보와 관련한 문의는 아래 연락처로 보내 주세요.
 
 ## 10. 아동의 개인정보
 
@@ -136,11 +141,12 @@ ML Kit는 위 정보를 서드 파티에 제공하지 않는다고 밝히고 있
 
 # Alarm Fit Privacy Policy (English summary)
 
-Effective date: October 29, 2026
+Effective date: November 9, 2026
 
 - Alarm Fit has no accounts and the developer runs no servers. **The developer does not collect or store your personal data.** For ads, the developer only receives aggregated reports (such as impression and click counts) that do not identify you.
 - Camera frames are processed **on your device only** to count exercise repetitions; images are never stored or transmitted.
 - If you allow calendar access, the app reads only **holiday calendars** on your device; personal calendars are not read.
+- The optional **body progress photos** feature (off by default) stores the photos you take and the weight, height and notes you enter only in the app's private storage. Location (GPS) tags are removed when a photo is saved. Lock (fingerprint/face/device PIN), screenshot blocking and thumbnail blurring are on by default; biometric data is handled by Android and never reaches the app. Photos leave the device only when you export or share them yourself, and exported files are not protected by the app's lock.
 - Alarms, days off, workout records and calibration values are stored only in the app's private storage, are excluded from Google cloud backup (moved only during a direct device-to-device transfer you start), and are deleted when you uninstall the app or clear its data.
 - Once a day the app downloads Google's public "Holidays in South Korea" calendar to pick up newly designated holidays. No personal data is sent (your IP address is visible to Google as with any internet request). You can turn this off in Settings.
 - The app uses **Google ML Kit** for on-device pose detection. According to Google's ML Kit data disclosure, ML Kit sends device information (manufacturer, model, OS version, available ML accelerators), app information (package name, app version), a per-installation identifier that does not uniquely identify a user or physical device, performance metrics, API configuration, feature version, event types and error codes to Google over HTTPS, for diagnostics and usage analytics. See Google's [ML Kit data disclosure](https://developers.google.com/ml-kit/android-data-disclosure).

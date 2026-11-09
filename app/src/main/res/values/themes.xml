@@ -25,4 +25,9 @@
     <style name="Theme.FitAlarm.Ring" parent="Theme.FitAlarm">
         <item name="android:windowBackground">@color/ring_bg</item>
     </style>
+
+    <!-- 눈바디 촬영 화면: 라이트·다크와 상관없이 항상 어두움 (열릴 때 밝게 번쩍이지 않게) -->
+    <style name="Theme.FitAlarm.Camera" parent="Theme.FitAlarm">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
 </resources>

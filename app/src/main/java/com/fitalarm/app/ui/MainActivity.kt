@@ -18,6 +18,8 @@ import com.fitalarm.app.R
 import com.fitalarm.app.alarm.AlarmScheduler
 import com.fitalarm.app.alarm.Notifications
 import com.fitalarm.app.holiday.HolidaySync
+import com.fitalarm.app.nunbody.NunbodyExport
+import com.fitalarm.app.nunbody.NunbodyReminder
 import com.fitalarm.app.monetize.AdMob
 import com.fitalarm.app.monetize.AdPlacement
 import com.fitalarm.app.monetize.AdsHost
@@ -56,6 +58,7 @@ class MainActivity : Activity(), AdsHost {
         setupEdgeToEdge()
         Notifications.ensureChannels(this)
         HolidaySync.schedulePeriodic(this)
+        NunbodyExport.cleanupShared(this)
 
         alarmsPage = AlarmsPage(this)
         recordsPage = RecordsPage(this)
@@ -73,6 +76,7 @@ class MainActivity : Activity(), AdsHost {
         super.onResume()
         // 권한·공휴일 변경 등을 반영해 항상 최신 상태로 재등록 (알람 수가 적어 비용이 작음)
         AlarmScheduler(this).rescheduleAll()
+        NunbodyReminder.schedule(this)
         HolidaySync.syncIfStale(this)
         refreshCurrent()
         handler.post(ticker)

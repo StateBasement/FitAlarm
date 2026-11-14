@@ -102,6 +102,7 @@ object AlarmRepository {
         put("announce", a.announce)
         put("snoozeCount", a.snoozeCount)
         put("snoozedUntil", a.snoozedUntil)
+        put("skipUntil", a.skipUntil)
     }
 
     internal fun fromJson(o: JSONObject): Alarm? {
@@ -140,6 +141,7 @@ object AlarmRepository {
             announce = o.optBoolean("announce", d.announce),
             snoozeCount = o.optInt("snoozeCount", 0).coerceAtLeast(0),
             snoozedUntil = o.optLong("snoozedUntil", 0L).coerceAtLeast(0L),
+            skipUntil = o.optLong("skipUntil", 0L).coerceAtLeast(0L),
         )
     }
 }

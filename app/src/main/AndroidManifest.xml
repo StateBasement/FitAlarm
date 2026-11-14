@@ -139,6 +139,11 @@
             android:exported="false"
             android:grantUriPermissions="true" />
 
+        <!-- 곧 울릴 알람 알림: 예약·'알람 취소'·밀어서 지움 -->
+        <receiver
+            android:name=".alarm.UpcomingReceiver"
+            android:exported="false" />
+
         <!-- 눈바디 촬영 알림 (기본 꺼짐) -->
         <receiver
             android:name=".nunbody.NunbodyReminderReceiver"

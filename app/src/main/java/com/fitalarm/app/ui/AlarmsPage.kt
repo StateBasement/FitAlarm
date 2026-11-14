@@ -259,6 +259,14 @@ class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM)
             else if (a.skipHolidays) "공휴일 쉼" else "휴무일 쉼"
             chips.addView(chip(text, Palette.SKY_SOFT, Palette.ON_SKY).apply { maxLines = 1 }, lp(WRAP, WRAP).margins(t = dp(6)))
         }
+        if (on && a.skipUntil > System.currentTimeMillis()) {
+            val t = Instant.ofEpochMilli(a.skipUntil).atZone(ZoneId.systemDefault())
+            chips.addView(
+                chip("${AlarmMath.relativeDay(t.toLocalDate(), java.time.LocalDate.now())} ${AlarmMath.formatTime(t.hour, t.minute, use24)} 한 번 취소함",
+                    Palette.WARM_SOFT, Palette.ON_WARM).apply { maxLines = 1 },
+                lp(WRAP, WRAP).margins(t = dp(6)),
+            )
+        }
         if (on && a.snoozedUntil > System.currentTimeMillis()) {
             val t = Instant.ofEpochMilli(a.snoozedUntil).atZone(ZoneId.systemDefault())
             chips.addView(
@@ -287,7 +295,7 @@ class AlarmsPage(host: MainActivity) : Page(host, AdPlacement.ALARM_LIST_BOTTOM)
     }
 
     private fun setAlarmEnabled(a: Alarm, enabled: Boolean) {
-        val saved = AlarmRepository.upsert(ctx, a.copy(enabled = enabled, snoozedUntil = 0L, snoozeCount = 0))
+        val saved = AlarmRepository.upsert(ctx, a.copy(enabled = enabled, snoozedUntil = 0L, snoozeCount = 0, skipUntil = 0L))
         val at = AlarmScheduler(ctx).schedule(saved)
         if (enabled && at != null) {
             ctx.toast("알람이 " + AlarmMath.describeRemaining(System.currentTimeMillis(), at) + " 후에 울립니다")

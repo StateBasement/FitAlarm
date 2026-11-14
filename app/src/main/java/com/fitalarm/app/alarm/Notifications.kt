@@ -22,10 +22,12 @@ import java.time.ZoneId
 object Notifications {
     private const val CH_RING = "alarm_ring_v1"
     private const val CH_INFO = "alarm_info_v1"
+    private const val CH_UPCOMING = "alarm_upcoming_v1"
 
     const val ID_RINGING = 1001
     private fun snoozeId(alarmId: Int) = 20_000 + alarmId
     private fun missedId(alarmId: Int) = 30_000 + alarmId
+    private fun upcomingId(alarmId: Int) = 40_000 + alarmId
 
     // PendingIntent requestCode 구분용
     private const val RC_SNOOZE = 1
@@ -46,7 +48,14 @@ object Notifications {
             setSound(null, null)
             setShowBadge(false)
         }
-        nm.createNotificationChannels(listOf(ring, info))
+        val upcoming = NotificationChannel(CH_UPCOMING, "곧 울릴 알람", NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = "알람이 울리기 전에 미리 알려 주고, 알람 보기·취소를 할 수 있어요"
+            setSound(null, null)
+            enableVibration(false)
+            setShowBadge(false)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        }
+        nm.createNotificationChannels(listOf(ring, info, upcoming))
     }
 
     private fun use24h(ctx: Context) = DateFormat.is24HourFormat(ctx)
@@ -162,6 +171,54 @@ object Notifications {
                 Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
             .build()
         notify(ctx, missedId(a.id), n)
+    }
+
+    /**
+     * 곧 울릴 알람: 상태창에서 내려 '알람 보기'(그 알람 화면)·'알람 취소'(이번 회차 건너뛰기, 한 번 알람은 끄기).
+     * 사용자가 밀어서 지운 회차는 다시 띄우지 않음.
+     */
+    fun showUpcoming(ctx: Context, a: Alarm, triggerAt: Long) {
+        if (UpcomingReceiver.wasDismissed(ctx, a.id, triggerAt)) return
+        ensureChannels(ctx)
+        val t = Instant.ofEpochMilli(triggerAt).atZone(ZoneId.systemDefault())
+        val whenText = AlarmMath.formatTime(t.hour, t.minute, use24h(ctx))
+        val day = AlarmMath.relativeDay(t.toLocalDate(), java.time.LocalDate.now())
+        val name = a.label.ifBlank { "알람" }
+        val text = if (a.hasMission) "$name · 운동 미션: ${a.routine.describe()}" else name
+        val list = Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val view = PendingIntent.getActivities(
+            ctx, a.id * 10 + 8,
+            arrayOf(list, Intent(ctx, com.fitalarm.app.ui.AlarmEditActivity::class.java).putExtra(com.fitalarm.app.ui.AlarmEditActivity.EXTRA_ALARM_ID, a.id)),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val cancel = UpcomingReceiver.pendingIntent(ctx, UpcomingReceiver.ACTION_CANCEL, a.id, triggerAt)
+        val cancelAction = Notification.Action.Builder(Icon.createWithResource(ctx, R.drawable.ic_stat_alarm), "알람 취소", cancel).apply {
+            // 잠금 화면에서는 휴대폰 잠금을 풀어야 취소됨 (다른 사람이 끄지 못하게, 실수 방지)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAuthenticationRequired(true)
+        }.build()
+        val n = Notification.Builder(ctx, CH_UPCOMING)
+            .setSmallIcon(R.drawable.ic_stat_alarm)
+            .setContentTitle("곧 울릴 알람 · ${if (day == "오늘") "" else "$day "}$whenText")
+            .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(
+                text + if (a.isRepeating) "\n'알람 취소'를 누르면 이번 한 번만 건너뛰어요" else "\n'알람 취소'를 누르면 이 알람이 꺼져요"))
+            .setCategory(Notification.CATEGORY_REMINDER)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
+            .setAutoCancel(false)
+            .setContentIntent(activityPi(ctx, a.id * 10 + 9, list))
+            .setDeleteIntent(UpcomingReceiver.pendingIntent(ctx, UpcomingReceiver.ACTION_DISMISSED, a.id, triggerAt))
+            .addAction(action(ctx, "알람 보기", view))
+            .addAction(cancelAction)
+            // 혹시 울릴 때 지워지지 않더라도 울린 뒤 2분이면 저절로 사라짐
+            .setTimeoutAfter((triggerAt - System.currentTimeMillis() + 2 * 60_000L).coerceAtLeast(60_000L))
+            .build()
+        notify(ctx, upcomingId(a.id), n)
+    }
+
+    fun cancelUpcoming(ctx: Context, alarmId: Int) {
+        ctx.systemService<NotificationManager>().cancel(upcomingId(alarmId))
     }
 
     private fun notify(ctx: Context, id: Int, n: Notification) {

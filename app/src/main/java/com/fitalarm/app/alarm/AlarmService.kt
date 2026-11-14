@@ -108,6 +108,7 @@ class AlarmService : Service() {
     // ------------------------------------------------------------------ 시작
 
     private fun handleStart(alarmId: Int) {
+        Notifications.cancelUpcoming(this, alarmId)
         val alarm = AlarmRepository.get(this, alarmId)
         if (alarm == null || !alarm.enabled) {
             // 삭제되었거나 그 사이 꺼진 알람: startForegroundService 계약상 startForeground 는 반드시 호출한 뒤 종료

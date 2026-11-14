@@ -1,5 +1,6 @@
 package com.fitalarm.app.core
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZonedDateTime
@@ -56,7 +57,9 @@ object AlarmMath {
         if (!alarm.enabled) return null
         val nowMs = now.toInstant().toEpochMilli()
         if (alarm.snoozedUntil > nowMs) return alarm.snoozedUntil
-        return nextOccurrence(alarm.hour, alarm.minute, alarm.days, now, effectiveSkip(alarm, skip))
+        // 미리 취소한 회차가 있으면 그다음 회차부터
+        val from = if (alarm.skipUntil > nowMs) ZonedDateTime.ofInstant(Instant.ofEpochMilli(alarm.skipUntil), now.zone) else now
+        return nextOccurrence(alarm.hour, alarm.minute, alarm.days, from, effectiveSkip(alarm, skip))
             .toInstant().toEpochMilli()
     }
 

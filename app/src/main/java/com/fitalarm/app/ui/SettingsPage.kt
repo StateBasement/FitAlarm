@@ -21,6 +21,7 @@ import com.fitalarm.app.core.VoiceStyle
 import com.fitalarm.app.data.AlarmRepository
 import com.fitalarm.app.data.BackupManager
 import com.fitalarm.app.data.CalibrationRepository
+import com.fitalarm.app.core.UpcomingAlarm
 import com.fitalarm.app.data.HolidayRepository
 import com.fitalarm.app.data.NunbodyRepository
 import com.fitalarm.app.nunbody.NunbodyReminder
@@ -75,6 +76,13 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
                     "울리는 중에 화면이 바닥을 향하게 뒤집으면 알람 소리가 10%로 줄어요",
                     s.flipToQuiet,
                 ) { v -> SettingsRepository.update(ctx) { it.copy(flipToQuiet = v) } })
+                // 곧 울릴 알람: 상태창에서 내려 알람 보기·취소
+                val (upRow, upValue) = valueRow(
+                    "곧 울릴 알람 알림",
+                    "울리기 전에 상태창에 미리 알려 드려요. 내려서 '알람 보기'나 '알람 취소'를 누를 수 있어요",
+                ) { chooseUpcoming() }
+                upValue.text = UpcomingAlarm.label(s.upcomingMinutes)
+                addView(upRow)
                 // 운동 미션 알람만 해당. 권한 상태를 그대로 보여주고, 누르면 휴대폰의 허용 화면으로
                 val overlayOk = android.provider.Settings.canDrawOverlays(ctx)
                 val (overlayRow, overlayValue) = valueRow(
@@ -326,6 +334,21 @@ class SettingsPage(host: MainActivity) : Page(host, AdPlacement.SETTINGS_BOTTOM)
                 ctx.toast("기본 기준으로 돌아갔어요")
                 refresh()
             }
+            .show()
+    }
+
+    private fun chooseUpcoming() {
+        val choices = UpcomingAlarm.CHOICES
+        val current = SettingsRepository.get(ctx).upcomingMinutes
+        AlertDialog.Builder(ctx)
+            .setTitle("곧 울릴 알람 알림")
+            .setSingleChoiceItems(choices.map { UpcomingAlarm.label(it) }.toTypedArray(), choices.indexOf(current).coerceAtLeast(0)) { d, which ->
+                SettingsRepository.update(ctx) { it.copy(upcomingMinutes = choices[which]) }
+                AlarmScheduler(ctx).rescheduleAll()
+                d.dismiss()
+                refresh()
+            }
+            .setNegativeButton("닫기", null)
             .show()
     }
 

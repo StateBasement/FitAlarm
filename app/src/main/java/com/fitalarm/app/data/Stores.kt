@@ -2,6 +2,7 @@ package com.fitalarm.app.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.fitalarm.app.core.UpcomingAlarm
 import com.fitalarm.app.core.Alarm
 import com.fitalarm.app.core.CalibrationBook
 import com.fitalarm.app.core.ExerciseType
@@ -32,6 +33,8 @@ data class AppSettings(
     val useDeviceCalendar: Boolean = true,
     /** 울리는 중에 휴대폰을 뒤집으면 알람 소리를 10%로 줄임 */
     val flipToQuiet: Boolean = true,
+    /** '곧 울릴 알람' 알림을 울리기 몇 분 전에 (0 = 끄기) */
+    val upcomingMinutes: Int = UpcomingAlarm.DEFAULT_MINUTES,
 )
 
 object SettingsRepository {
@@ -66,6 +69,7 @@ object SettingsRepository {
         put("holidayAutoUpdate", s.holidayAutoUpdate)
         put("useDeviceCalendar", s.useDeviceCalendar)
         put("flipToQuiet", s.flipToQuiet)
+        put("upcomingMinutes", s.upcomingMinutes)
     }
 
     internal fun fromJson(text: String): AppSettings = try {
@@ -83,6 +87,7 @@ object SettingsRepository {
             holidayAutoUpdate = o.optBoolean("holidayAutoUpdate", d.holidayAutoUpdate),
             useDeviceCalendar = o.optBoolean("useDeviceCalendar", d.useDeviceCalendar),
             flipToQuiet = o.optBoolean("flipToQuiet", d.flipToQuiet),
+            upcomingMinutes = o.optInt("upcomingMinutes", d.upcomingMinutes).let { if (it in UpcomingAlarm.CHOICES) it else d.upcomingMinutes },
         )
     } catch (e: JSONException) {
         AppSettings()

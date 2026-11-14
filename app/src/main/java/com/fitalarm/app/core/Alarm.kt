@@ -90,6 +90,7 @@ data class Alarm(
     // ---- 런타임 상태 (저장되지만 사용자가 직접 설정하지 않음) ----
     val snoozeCount: Int = 0,
     val snoozedUntil: Long = 0L,           // epoch ms, 0 = 다시 알림 대기 아님
+    val skipUntil: Long = 0L,              // epoch ms: 이 시각까지의 정규 알람은 건너뜀 ('곧 울릴 알람' 알림에서 취소한 회차)
 ) {
     val isRepeating: Boolean get() = days != Days.NONE
 

@@ -828,6 +828,7 @@ class AlarmEditActivity : Activity() {
             enabled = true,
             snoozeCount = 0,
             snoozedUntil = 0L,
+            skipUntil = 0L,   // 다시 저장하면 미리 취소한 회차도 되살림
         )
         val saved = AlarmRepository.upsert(this, toSave)
         val at = AlarmScheduler(this).schedule(saved)

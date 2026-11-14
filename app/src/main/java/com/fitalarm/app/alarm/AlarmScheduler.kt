@@ -40,6 +40,7 @@ class AlarmScheduler(context: Context) {
 
     fun cancel(alarmId: Int) {
         am.cancel(firePendingIntent(alarmId))
+        UpcomingReceiver.cancel(ctx, alarmId)
         AlarmWidget.refresh(ctx)
     }
 
@@ -63,7 +64,10 @@ class AlarmScheduler(context: Context) {
 
     private fun scheduleOne(alarm: Alarm): Long? {
         am.cancel(firePendingIntent(alarm.id))
-        val triggerAt = nextTrigger(alarm) ?: return null
+        val triggerAt = nextTrigger(alarm)
+        // 곧 울릴 알람 알림도 같은 회차로 맞춤 (다시 알림 대기 중이면 띄우지 않음)
+        UpcomingReceiver.schedule(ctx, alarm.id, triggerAt, isSnooze = triggerAt != null && triggerAt == alarm.snoozedUntil)
+        if (triggerAt == null) return null
         val operation = firePendingIntent(alarm.id)
         if (canScheduleExact()) {
             // setAlarmClock: Doze 중에도 정확히 울리고, 상태바에 알람 아이콘이 표시됨
